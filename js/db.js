@@ -5,10 +5,11 @@
   const NOME_BANCO = 'fr_offline';
   const VERSAO_BANCO = 1;
 
-  const ST_PERFIL = 'perfil';       // { rgf, nome, cargo }
-  const ST_VEICULOS = 'veiculos';   // { id, tombamento, marca, modelo, placa, ativo }
-  const ST_FR = 'frs';              // frs completas
-  const ST_LOCAIS = 'locais';       // { chave, texto, n }
+  const ST_PERFIL = 'perfil';
+  const ST_VEICULOS = 'veiculos';
+  const ST_FR = 'frs';
+  const ST_LOCAIS = 'locais';
+  const ST_DESCRICOES = 'descricoes';
 
   let dbPromise = null;
 
@@ -22,6 +23,7 @@
         if (!b.objectStoreNames.contains(ST_VEICULOS)) b.createObjectStore(ST_VEICULOS, { keyPath: 'id' });
         if (!b.objectStoreNames.contains(ST_FR)) b.createObjectStore(ST_FR, { keyPath: 'id' });
         if (!b.objectStoreNames.contains(ST_LOCAIS)) b.createObjectStore(ST_LOCAIS, { keyPath: 'chave' });
+        if (!b.objectStoreNames.contains(ST_DESCRICOES)) b.createObjectStore(ST_DESCRICOES, { keyPath: 'id' });
       };
       req.onsuccess = () => ok(req.result);
       req.onerror = () => erro(req.error);
@@ -38,26 +40,18 @@
   // ---------- perfil ----------
   async function lerPerfil() {
     const s = await loja(ST_PERFIL);
-    const lista = await new Promise((ok) => {
-      const r = s.getAll(); r.onsuccess = () => ok(r.result);
-    });
+    const lista = await new Promise((ok) => { const r = s.getAll(); r.onsuccess = () => ok(r.result); });
     return lista[0] || null;
   }
   async function gravarPerfil(p) {
     const s = await loja(ST_PERFIL, 'readwrite');
     await new Promise((ok) => { const r = s.put(p); r.onsuccess = () => ok(); });
   }
-  async function limparPerfil() {
-    const s = await loja(ST_PERFIL, 'readwrite');
-    await new Promise((ok) => { const r = s.clear(); r.onsuccess = () => ok(); });
-  }
 
   // ---------- veículos ----------
   async function lerVeiculos() {
     const s = await loja(ST_VEICULOS);
-    return new Promise((ok) => {
-      const r = s.getAll(); r.onsuccess = () => ok(r.result.filter(v => v.ativo !== false));
-    });
+    return new Promise((ok) => { const r = s.getAll(); r.onsuccess = () => ok(r.result.filter(v => v.ativo !== false)); });
   }
   async function salvarVeiculo(v) {
     if (!v.id) v.id = 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2);
@@ -111,50 +105,55 @@
     }
   }
 
+  // ---------- descrições recentes ----------
+  async function lerDescricoes() {
+    const s = await loja(ST_DESCRICOES);
+    return new Promise((ok) => { const r = s.getAll(); r.onsuccess = () => ok(r.result.map(d => d.texto)); });
+  }
+  async function salvarDescricao(texto) {
+    const s = await loja(ST_DESCRICOES, 'readwrite');
+    const lista = await lerDescricoes();
+    const novaLista = [texto, ...lista.filter(t => t !== texto)].slice(0, 6);
+    await new Promise((ok) => { const r = s.clear(); r.onsuccess = () => ok(); });
+    for (const t of novaLista) { await new Promise((ok) => { const r = s.put({ id: t + '_' + Date.now(), texto: t }); r.onsuccess = () => ok(); }); }
+  }
+
   // ---------- exportação / importação ----------
   async function exportarTudo() {
-    const [perfil, veiculos, frs, locais] = await Promise.all([
-      lerPerfil(), lerVeiculos(), lerFrs(), lerLocais(),
+    const [perfil, veiculos, frs, locais, descricoes] = await Promise.all([
+      lerPerfil(), lerVeiculos(), lerFrs(), lerLocais(), lerDescricoes(),
     ]);
-    return {
-      versao: '1.0.0',
-      exportadoEm: Date.now(),
-      perfil,
-      veiculos,
-      frs,
-      locais,
-    };
+    return { versao: '1.0.0', exportadoEm: Date.now(), perfil, veiculos, frs, locais, descricoes };
   }
   async function importarTudo(dados) {
     const b = await abrirBanco();
     await Promise.all([
-      limparStore(ST_PERFIL), limparStore(ST_VEICULOS), limparStore(ST_FR), limparStore(ST_LOCAIS),
+      limparStore(ST_PERFIL), limparStore(ST_VEICULOS), limparStore(ST_FR), limparStore(ST_LOCAIS), limparStore(ST_DESCRICOES),
     ]);
     if (dados.perfil) await gravarPerfil(dados.perfil);
     if (dados.veiculos) for (const v of dados.veiculos) await salvarVeiculo(v);
     if (dados.frs) for (const fr of dados.frs) await salvarFr(fr);
     if (dados.locais) for (const l of dados.locais) await registrarLocal(l.texto, l.chave);
+    if (dados.descricoes) for (const t of dados.descricoes) await salvarDescricao(t);
   }
   async function limparStore(nome) {
     const s = await loja(nome, 'readwrite');
     await new Promise((ok) => { const r = s.clear(); r.onsuccess = () => ok(); });
   }
   async function limparTudo() {
-    await Promise.all([
-      limparStore(ST_PERFIL), limparStore(ST_VEICULOS), limparStore(ST_FR), limparStore(ST_LOCAIS),
-    ]);
+    await Promise.all([limparStore(ST_PERFIL), limparStore(ST_VEICULOS), limparStore(ST_FR), limparStore(ST_LOCAIS), limparStore(ST_DESCRICOES)]);
   }
 
-  // helpers
   function novoId(prefixo) {
     return prefixo + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
   }
 
   global.FrDb = {
-    lerPerfil, gravarPerfil, limparPerfil,
+    lerPerfil, gravarPerfil,
     lerVeiculos, salvarVeiculo, excluirVeiculo,
     lerFrs, salvarFr, excluirFr, lerFr,
     lerLocais, registrarLocal,
+    lerDescricoes, salvarDescricao,
     exportarTudo, importarTudo, limparTudo,
     novoId,
   };

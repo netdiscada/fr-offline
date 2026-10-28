@@ -430,6 +430,12 @@
 
   // ---------- iniciar ----------
   async function iniciar() {
+    if (!global.FrDb) {
+      mostrarTela('cadastro');
+      montarListaVeiculos();
+      avisar('Banco ainda não carregado. Recarregue a página.', 'erro');
+      return;
+    }
     mostrarTela('carregando');
     await lerDadosIniciais();
     if (perfil && veiculos.length > 0) {
@@ -441,7 +447,6 @@
   }
   iniciar().catch(e => {
     console.error('[FR Offline] iniciar falhou:', e);
-    // Mesmo com erro, mostra a tela de cadastro para o usuário não ficar travado
     mostrarTela('cadastro');
     montarListaVeiculos();
     avisar('Erro ao abrir. Tente preencher o cadastro mesmo assim.', 'erro');
