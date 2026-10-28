@@ -9,14 +9,15 @@
 
   function mostrarTela(nome) {
     $$('.tela').forEach(t => t.hidden = true);
-    const el = $(id(nome));
+    const el = document.getElementById('tela-' + nome);
     if (el) el.hidden = false;
     document.body.dataset.tela = nome;
     const [t, s] = TITULOS[nome] || TITULOS.inicio;
-    $('#topoTitulo').textContent = t;
-    $('#topoSub').textContent = s || '';
+    const tt = $('#topoTitulo');
+    const ts = $('#topoSub');
+    if (tt) tt.textContent = t;
+    if (ts) ts.textContent = s || '';
   }
-  function id(nome) { return 'tela-' + nome; }
 
   const TITULOS = {
     carregando: ['Relatório Diário', ''],
@@ -29,7 +30,7 @@
   // ---------- estado ----------
   let perfil = null;
   let veiculos = [];
-  let frAtual = null; // { id, veiculo, condutor, ... }
+  let frAtual = null;
 
   // ---------- aviso ----------
   function avisar(msg, tipo) {
@@ -55,20 +56,28 @@
   }
 
   // ---------- cadastro ----------
-  async function iniciarCadastro() {
-    perfil = await Db.lerPerfil();
-    veiculos = await Db.lerVeiculos();
-    if (perfil && veiculos.length > 0) {
-      entrarApp();
-    } else {
-      mostrarTela('cadastro');
-      montarListaVeiculos();
+  async function lerDadosIniciais() {
+    try {
+      perfil = await Db.lerPerfil();
+    } catch (e) {
+      console.warn('[FR] lerPerfil falhou:', e);
+      perfil = null;
+    }
+    try {
+      veiculos = await Db.lerVeiculos();
+    } catch (e) {
+      console.warn('[FR] lerVeiculos falhou:', e);
+      veiculos = [];
     }
   }
 
   function montarListaVeiculos() {
     const el = $('#listaVeiculos');
     if (!el) return;
+    if (veiculos.length === 0) {
+      el.innerHTML = '';
+      return;
+    }
     el.innerHTML = veiculos.map(v => `
       <div class="chip" style="background:var(--cinza-claro);padding:6px 10px;border-radius:6px;margin:4px 0;display:flex;justify-content:space-between;align-items:center;">
         <span>${v.tombamento || ''} - ${v.marca || ''} ${v.modelo || ''} (${v.placa || ''})</span>
@@ -77,9 +86,11 @@
     `).join('');
     el.querySelectorAll('[data-excluir-veic]').forEach(b => {
       b.addEventListener('click', async () => {
-        await Db.excluirVeiculo(b.dataset.excluirVeic);
-        veiculos = await Db.lerVeiculos();
-        montarListaVeiculos();
+        try {
+          await Db.excluirVeiculo(b.dataset.excluirVeic);
+          veiculos = await Db.lerVeiculos();
+          montarListaVeiculos();
+        } catch (e) { avisar('Erro ao remover veículo', 'erro'); }
       });
     });
   }
@@ -98,10 +109,12 @@
       ativo: true,
     };
     if (!v.marca && !v.modelo && !v.placa) { avisar('Preencha ao menos marca, modelo ou placa', 'erro'); return; }
-    await Db.salvarVeiculo(v);
-    veiculos = await Db.lerVeiculos();
-    montarListaVeiculos();
-    $('#veicTombamento').value = ''; $('#veicMarca').value = ''; $('#veicModelo').value = ''; $('#veicPlaca').value = '';
+    try {
+      await Db.salvarVeiculo(v);
+      veiculos = await Db.lerVeiculos();
+      montarListaVeiculos();
+      $('#veicTombamento').value = ''; $('#veicMarca').value = ''; $('#veicModelo').value = ''; $('#veicPlaca').value = '';
+    } catch (e) { avisar('Erro ao salvar veículo', 'erro'); }
   });
 
   $('#btnConcluirCadastro').addEventListener('click', async () => {
@@ -112,13 +125,16 @@
     };
     if (!p.rgf || !p.nome) { avisar('Preencha RGF e nome', 'erro'); return; }
     if (veiculos.length === 0) { avisar('Cadastre ao menos um veículo', 'erro'); return; }
-    await Db.gravarPerfil(p);
-    perfil = p;
-    entrarApp();
+    try {
+      await Db.gravarPerfil(p);
+      perfil = p;
+      entrarApp();
+    } catch (e) { avisar('Erro ao salvar cadastro', 'erro'); }
   });
 
   function entrarApp() {
-    $('#menuQuem').textContent = `${perfil.nome} · RGF ${perfil.rgf} · ${perfil.cargo}`;
+    const mq = $('#menuQuem');
+    if (mq) mq.textContent = `${perfil.nome} · RGF ${perfil.rgf} · ${perfil.cargo}`;
     mostrarTela('inicio');
     renderInicio();
   }
@@ -131,15 +147,18 @@
       <div class="cartao">
         <div class="cartao-corpo">
           <h3 class="secao">Veículos cadastrados</h3>
-          ${veiculos.map(v => `
-            <div class="chip" style="background:var(--cinza-claro);padding:10px 12px;border-radius:8px;margin:6px 0;display:flex;justify-content:space-between;align-items:center;">
-              <div>
-                <div style="font-weight:700">${v.marca || ''} ${v.modelo || ''}</div>
-                <div style="font-size:0.9rem;color:var(--texto-sec)">${v.tombamento || ''} · ${v.placa || ''}</div>
+          ${veiculos.length === 0
+            ? '<p style="color:var(--texto-sec);text-align:center">Nenhum veículo cadastrado</p>'
+            : veiculos.map(v => `
+              <div class="chip" style="background:var(--cinza-claro);padding:10px 12px;border-radius:8px;margin:6px 0;display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                  <div style="font-weight:700">${v.marca || ''} ${v.modelo || ''}</div>
+                  <div style="font-size:0.9rem;color:var(--texto-sec)">${v.tombamento || ''} · ${v.placa || ''}</div>
+                </div>
+                <button class="btn btn-principal" style="padding:8px 14px;font-size:0.9rem" data-iniciar-fr="${v.id}">Iniciar FR</button>
               </div>
-              <button class="btn btn-principal" style="padding:8px 14px;font-size:0.9rem" data-iniciar-fr="${v.id}">Iniciar FR</button>
-            </div>
-          `).join('')}
+            `).join('')
+          }
         </div>
       </div>
     `;
@@ -175,7 +194,6 @@
     const form = $('#form');
     if (!form) return;
 
-    // veículo
     $('#fichaVeiculos').innerHTML = `
       <div class="chip" style="background:var(--cinza-claro);padding:8px 12px;border-radius:6px;">
         <strong>${frAtual.veiculo.marca || ''} ${frAtual.veiculo.modelo || ''}</strong><br>
@@ -183,14 +201,12 @@
       </div>
     `;
 
-    // condutor
     $('#fichaCondutor').innerHTML = `
       <div><span>Nome</span><b>${frAtual.condutor}</b></div>
       <div><span>RGF</span><b>${frAtual.rgf}</b></div>
       <div><span>Cargo</span><b>${frAtual.cargo}</b></div>
     `;
 
-    // preencher campos
     preencherCampo('data', frAtual.data);
     preencherCampo('descricao', frAtual.descricao);
     preencherCampo('partida_km', frAtual.partida_km);
@@ -201,28 +217,25 @@
     preencherCampo('defeitos', frAtual.defeitos);
     preencherCampo('ocorrencias', frAtual.ocorrencias);
 
-    // combustível
     if (frAtual.combustivel) {
       $$('[data-grupo="combustivel"] button').forEach(b => {
-        b.style.borderColor = b.dataset.valor === frAtual.combustivel ? 'var(--primario)' : 'var(--borda)';
-        b.style.background = b.dataset.valor === frAtual.combustivel ? 'var(--primario)' : 'var(--fundo)';
-        b.style.color = b.dataset.valor === frAtual.combustivel ? '#000' : 'var(--texto)';
+        const sel = b.dataset.valor === frAtual.combustivel;
+        b.style.borderColor = sel ? 'var(--primario)' : 'var(--borda)';
+        b.style.background = sel ? 'var(--primario)' : 'var(--fundo)';
+        b.style.color = sel ? '#000' : 'var(--texto)';
       });
     }
 
-    // paradas
     renderParadas();
-
-    // checklist básico
     renderChecklist();
   }
 
   function preencherCampo(nome, valor) {
-    const el = form.querySelector('[name="' + nome + '"]');
+    const el = $('#form').querySelector('[name="' + nome + '"]');
     if (el && valor !== undefined && valor !== null) el.value = valor;
   }
 
-  $$('[name]').forEach(el => {
+  $$('#form [name]').forEach(el => {
     el.addEventListener('input', () => salvarFichaAtual());
   });
 
@@ -238,12 +251,11 @@
     if (!frAtual) return;
     const dados = {};
     $$('#form [name]').forEach(el => {
-      if (el.tagName === 'TEXTAREA') dados[el.name] = el.value;
-      else dados[el.name] = el.value;
+      dados[el.name] = el.value;
     });
     Object.assign(frAtual, dados);
     frAtual.atualizadoEm = Date.now();
-    Db.salvarFr(frAtual);
+    Db.salvarFr(frAtual).catch(() => {});
   }
 
   function renderParadas() {
@@ -299,33 +311,35 @@
   // ---------- encerrar ----------
   $('#btnEncerrar').addEventListener('click', async () => {
     if (!frAtual) return;
-    await Db.salvarFr(frAtual);
-    frAtual.status = 'fechada';
-    frAtual.fechadoEm = Date.now();
-    await Db.salvarFr(frAtual);
-    avisar('FR encerrada e salva no celular');
-    mostrarTela('inicio');
-    renderInicio();
-    frAtual = null;
+    try {
+      await Db.salvarFr(frAtual);
+      frAtual.status = 'fechada';
+      frAtual.fechadoEm = Date.now();
+      await Db.salvarFr(frAtual);
+      avisar('FR encerrada e salva no celular');
+      mostrarTela('inicio');
+      renderInicio();
+      frAtual = null;
+    } catch (e) { avisar('Erro ao encerrar FR', 'erro'); }
   });
 
   // ---------- PDF ----------
   $('#btnFichaPdf').addEventListener('click', async () => {
     if (!frAtual) return;
-    await salvarFichaAtual();
-    const pdf = await gerarPdf(frAtual);
-    const blob = await pdf.output('blob');
-    const url = URL.createObjectURL(blob);
-    $('#folhaPdfTexto').textContent = 'FR de ' + (frAtual.veiculo.placa || 'veículo') + ' - ' + frAtual.data;
-    $('#folhaPdf').hidden = false;
-
-    $('#btnAbrirPdf').onclick = () => { window.open(url, '_blank'); };
-    $('#btnCompartilharPdf').onclick = async () => {
-      try {
-        await navigator.share({ title: 'FR Offline', text: 'Relatório Diário', url });
-      } catch (e) { avisar('Não foi possível compartilhar', 'erro'); }
-    };
-    $('#btnImprimirPdf').onclick = () => { window.print(); };
+    try {
+      await salvarFichaAtual();
+      const pdf = await gerarPdf(frAtual);
+      const blob = await pdf.output('blob');
+      const url = URL.createObjectURL(blob);
+      $('#folhaPdfTexto').textContent = 'FR de ' + (frAtual.veiculo.placa || 'veículo') + ' - ' + frAtual.data;
+      $('#folhaPdf').hidden = false;
+      $('#btnAbrirPdf').onclick = () => { window.open(url, '_blank'); };
+      $('#btnCompartilharPdf').onclick = async () => {
+        try { await navigator.share({ title: 'FR Offline', text: 'Relatório Diário', url }); }
+        catch (e) { avisar('Não foi possível compartilhar', 'erro'); }
+      };
+      $('#btnImprimirPdf').onclick = () => { window.print(); };
+    } catch (e) { avisar('Erro ao gerar PDF', 'erro'); }
   });
 
   // ---------- menu ----------
@@ -346,14 +360,16 @@
 
   $('#btnMenuExportar').addEventListener('click', async () => {
     $('#folhaMenu').hidden = true;
-    const dados = await Db.exportarTudo();
-    const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'fr-offline-backup-' + new Date().toISOString().slice(0, 10) + '.json';
-    a.click();
-    avisar('Backup exportado');
+    try {
+      const dados = await Db.exportarTudo();
+      const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'fr-offline-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+      a.click();
+      avisar('Backup exportado');
+    } catch (e) { avisar('Erro ao exportar', 'erro'); }
   });
 
   $('#btnMenuImportar').addEventListener('click', async () => {
@@ -370,7 +386,8 @@
         await Db.importarTudo(dados);
         perfil = await Db.lerPerfil();
         veiculos = await Db.lerVeiculos();
-        $('#menuQuem').textContent = `${perfil.nome} · RGF ${perfil.rgf} · ${perfil.cargo}`;
+        const mq = $('#menuQuem');
+        if (mq) mq.textContent = `${perfil.nome} · RGF ${perfil.rgf} · ${perfil.cargo}`;
         renderInicio();
         avisar('Dados importados');
       } catch (err) { avisar('Arquivo inválido', 'erro'); }
@@ -381,11 +398,13 @@
   $('#btnMenuLimpar').addEventListener('click', async () => {
     $('#folhaMenu').hidden = true;
     if (!(await confirmar('Limpar tudo?', 'Isso apaga perfil, veículos e FRs deste celular. Não tem como desfazer.'))) return;
-    await Db.limparTudo();
-    perfil = null; veiculos = []; frAtual = null;
-    mostrarTela('cadastro');
-    montarListaVeiculos();
-    avisar('Todos os dados foram apagados');
+    try {
+      await Db.limparTudo();
+      perfil = null; veiculos = []; frAtual = null;
+      mostrarTela('cadastro');
+      montarListaVeiculos();
+      avisar('Todos os dados foram apagados');
+    } catch (e) { avisar('Erro ao limpar', 'erro'); }
   });
 
   $('#btnAnimacoes').addEventListener('click', () => {
@@ -406,15 +425,27 @@
   }
 
   // ---------- versão ----------
-  $('#versao').textContent = 'FR Offline · v' + VERSAO;
+  const v = $('#versao');
+  if (v) v.textContent = 'FR Offline · v' + VERSAO;
 
   // ---------- iniciar ----------
   async function iniciar() {
     mostrarTela('carregando');
-    await iniciarCadastro();
+    await lerDadosIniciais();
+    if (perfil && veiculos.length > 0) {
+      entrarApp();
+    } else {
+      mostrarTela('cadastro');
+      montarListaVeiculos();
+    }
   }
-  iniciar().catch(e => { console.error('[FR Offline] iniciar', e); avisar('Erro ao abrir: ' + e.message, 'erro'); });
+  iniciar().catch(e => {
+    console.error('[FR Offline] iniciar falhou:', e);
+    // Mesmo com erro, mostra a tela de cadastro para o usuário não ficar travado
+    mostrarTela('cadastro');
+    montarListaVeiculos();
+    avisar('Erro ao abrir. Tente preencher o cadastro mesmo assim.', 'erro');
+  });
 
-  // expõe para uso externo
   global.FR = { mostrarTela, avisar, perfil: () => perfil, veiculos: () => veiculos, frAtual: () => frAtual };
 })(window);
