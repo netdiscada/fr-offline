@@ -42,12 +42,10 @@
 
   $('#btnVoltar').addEventListener('click', () => {
     const tela = document.body.dataset.tela;
-    if (global.FrChefe && global.FrChefe.voltar()) return;
     if (tela === 'ficha' && F.estado.edicaoAdm) { F.estado.aoFimEdicao(); return; }
     if (tela === 'preparar') { $('#btnPrepararVoltar').click(); return; }
     if (tela === 'comecar') { $('#btnComecarVoltar').click(); return; }
     if (tela === 'ficha' || tela === 'encerrar') F.sincronizar();
-    if (tela === 'adm') global.FrAdm.fechar();
     if (F.perfil()) global.FrDia.inicio();
     else telaRgf();
   });
@@ -58,7 +56,6 @@
     const folha = Array.from(document.querySelectorAll('.folha')).find(f => !f.hidden);
     if (folha) { const fundo = folha.querySelector('[data-fechar]'); if (fundo) fundo.click(); else folha.hidden = true; return true; }
     if (!$('#visorPdf').hidden) { $('#visorFechar').click(); return true; }
-    if (global.FrChefe && global.FrChefe.voltar()) return true;
     if (!$('#btnVoltar').hidden) { $('#btnVoltar').click(); return true; }
     if (document.body.dataset.tela === 'comecar') { $('#btnComecarVoltar').click(); return true; }
     if (document.body.dataset.tela === 'preparar') { $('#btnPrepararVoltar').click(); return true; }
@@ -66,7 +63,7 @@
   }
   const RAIZ = ['inicio', 'equipe', 'rgf', 'carregando'];
   const longeDaRaiz = () => !RAIZ.includes(document.body.dataset.tela) || !!document.querySelector('.folha:not([hidden])')
-    || !$('#visorPdf').hidden || !!(global.FrChefe && global.FrChefe.emSubtela());
+    || !$('#visorPdf').hidden;
   if (F.nativo && Capacitor.Plugins.App) {
     Capacitor.Plugins.App.addListener('backButton', () => { if (!voltarUmPasso()) Capacitor.Plugins.App.minimizeApp(); });
   } else {
@@ -157,7 +154,6 @@
     F.usarConvidada(null);
     vigiarRgf();
     acompanharPreparadas();
-    conferirChefe();
     F.reenviarLocais().catch(e => console.warn('[FR] reenviar locais', e.code || e));
     global.FrDia.inicio();
     recuperarFr();
@@ -292,24 +288,7 @@
     });
   }
 
-  // Celular de chefe: registra no banco (uma vez por RGF) para poder ver as FRs da equipe
-  const CHAVE_CHEFE = 'fr.chefe.v1';
-  let chefePronto = Promise.resolve();
-  function conferirChefe() {
-    const p = F.perfil();
-    const registrado = F.ler(CHAVE_CHEFE, null);
-    if (p && p.papel === 'chefe') {
-      if (registrado === p.rgf) return;
-      chefePronto = Db.registrarChefe(p).then(() => F.gravar(CHAVE_CHEFE, p.rgf))
-        .catch(e => console.warn('[FR] registrar chefe', e.code || e));
-    } else if (registrado) {
-      localStorage.removeItem(CHAVE_CHEFE);
-      Db.deixarChefe();
-    }
-  }
-  F.chefePronto = () => chefePronto;
-  // O painel do chefe recebeu "sem permissão": registra o celular de novo
-  F.registrarChefeDeNovo = () => { localStorage.removeItem(CHAVE_CHEFE); conferirChefe(); return chefePronto; };
+  // Sem servidor: nao há área do chefe nem do ADM. Um funcionario so.
 
   // Se o ADM desvincular este celular (ou liberar a troca de RGF), volta para o primeiro acesso.
   // Mudança de nome/cargo feita pelo ADM chega sozinha.
@@ -328,9 +307,8 @@
           p.papel = papel;
           F.salvarPerfil(p);
           if (virou) {
-            conferirChefe();
             if (['inicio', 'equipe', 'preparar'].includes(document.body.dataset.tela)) global.FrDia.inicio();
-            F.avisar(papel === 'chefe' ? 'Você agora é chefe: veja as FRs da equipe' : 'Seu acesso de chefe foi retirado');
+            F.avisar('Cadastro atualizado.');
           }
         }
         return;
@@ -339,8 +317,7 @@
       pararRgf = null;
       localStorage.removeItem('fr.perfil.v2');
       acompanharPreparadas();
-      conferirChefe();
-      // A FR aberta é do RGF que saiu deste celular: fica no banco para o dono continuar
+      // A FR aberta e do RGF que saiu deste celular: fica no banco para o dono continuar
       if (F.estado.fr && F.estado.fr.rgf === p.rgf) { F.estado.fr = null; F.salvarAgora(); }
       F.usarConvidada(null);
       $('#rgfNumero').value = '';
@@ -372,37 +349,8 @@
   $('#btnMenuTrocarRgf').addEventListener('click', async () => {
     F.fecharFolhas();
     const p = F.perfil();
-    if (!(await F.confirmar('Trocar o RGF?', `O ADM precisa liberar. Depois disso você digita o RGF certo neste celular. (RGF atual: ${p.rgf})`, 'Pedir ao ADM', false))) return;
-    try { await Db.pedirLiberacao(p.rgf, 'trocar_rgf'); F.avisar('Pedido enviado ao ADM'); }
-    catch (e) { F.avisar('Não foi possível enviar: ' + e.message, 'erro'); }
-  });
-
-  $('#btnMenuAdm').addEventListener('click', async () => {
-    F.fecharFolhas();
-    if (document.body.dataset.tela === 'adm') {
-      global.FrAdm.fechar();
-      await Db.sairAdm();
-      F.perfil() ? global.FrDia.inicio() : telaRgf();
-      return;
-    }
-    if (await Db.souAdm()) { global.FrAdm.abrir(); return; }
-    F.abrirFolha('folhaAdmLogin');
-    setTimeout(() => $('#admEmail').focus(), 250);
-  });
-
-  $('#btnAdmEntrar').addEventListener('click', async () => {
-    const btn = $('#btnAdmEntrar');
-    btn.disabled = true;
-    try {
-      await Db.entrarAdm($('#admEmail').value.trim(), $('#admSenha').value);
-      $('#admSenha').value = '';
-      F.fecharFolhas();
-      global.FrAdm.abrir();
-    } catch (e) {
-      F.avisar(/password|user-not-found|credential/i.test(e.code || e.message) ? 'E-mail ou senha incorretos' : e.message, 'erro');
-    } finally {
-      btn.disabled = false;
-    }
+    if (!(await F.confirmar('Trocar o RGF?', 'O proximo celular que digitar esse RGF passa a ser o dele. (RGF atual: ' + p.rgf + ')', 'Trocar', false))) return;
+    F.avisar('Voce pode digitar outro RGF na proxima vez que abrir o app.');
   });
 
   // ---------- atualizador do APK ----------
@@ -489,7 +437,6 @@
     if (!F.perfil()) { telaRgf(); return; }
     vigiarRgf();
     acompanharPreparadas();
-    conferirChefe();
     F.reenviarLocais().catch(e => console.warn('[FR] reenviar locais', e.code || e));
     global.FrDia.inicio();
     recuperarFr();

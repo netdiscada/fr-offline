@@ -67,8 +67,6 @@
   // =====================================================================
   function inicio() {
     const p = F.perfil() || {};
-    // O chefe só cuida da equipe (a FR dele, se precisar, ele prepara e usa no papel)
-    if (F.ehChefe() && global.FrChefe) { global.FrChefe.abrir(); return; }
     if (F.estado.convidadoId && !F.convidada()) F.usarConvidada(null); // colega parou de compartilhar
     const convidado = !!F.convidada();
     const atual = fr();
