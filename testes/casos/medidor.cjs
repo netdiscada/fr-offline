@@ -1,0 +1,108 @@
+const { chromium } = require('playwright');
+const { acaoFr, IMPRIMIR, fecharVisor } = require('./ui.cjs');
+const { initializeTestEnvironment } = require('@firebase/rules-unit-testing');
+const { doc, setDoc, getDoc } = require('firebase/firestore');
+let falhas = 0;
+const ok = (c, msg) => { console.log(c ? 'OK  ' : 'FALHA', msg); if (!c) falhas++; };
+const dia = n => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+(async () => {
+  const env = await initializeTestEnvironment({ projectId: 'demo-fr', firestore: { host: '127.0.0.1', port: 8086, rules: require('fs').readFileSync(require('path').resolve(__dirname, '../../firestore.rules'), 'utf8') } });
+  const adm = async fn => { let r; await env.withSecurityRulesDisabled(async c => { r = await fn(c.firestore()); }); return r; };
+  const r = await (await fetch('http://127.0.0.1:9098/identitytoolkit.googleapis.com/v1/accounts:signUp?key=demo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'adm@fr.test', password: 'senha123', returnSecureToken: true }) })).json();
+  await adm(async db => {
+    await setDoc(doc(db, 'admins/' + r.localId), {});
+    await setDoc(doc(db, 'funcionarios/100'), { rgf: '100', nome: 'Antonio Silva', cargo: 'ASG', uid: null, aprovado: true });
+    await setDoc(doc(db, 'veiculos/maq'), { placa: '', numero: '55', modelo: 'Retroescavadeira', medidor: 'horimetro', ultimoKm: 1234.5, ativo: true, licenciamentoVence: dia(10) });
+    await setDoc(doc(db, 'veiculos/car'), { placa: 'ABC-1234', modelo: 'Gol', ultimoKm: 5000, ativo: true, licenciamentoVence: dia(-3) });
+    await setDoc(doc(db, 'veiculos/ok'), { placa: 'XYZ-9999', modelo: 'Uno', ultimoKm: 100, ativo: true });
+  });
+  const b = await chromium.launch();
+  const ctx = await b.newContext({ viewport: { width: 400, height: 860 } });
+  const p = await ctx.newPage();
+  const csp = [];
+  p.on('console', m => { if (/Content Security Policy/i.test(m.text())) csp.push(m.text()); });
+  p.on('pageerror', e => console.log('pageerror', e.message));
+  await p.goto('http://localhost:8090/');
+  ok(await p.evaluate(() => !!document.querySelector('meta[http-equiv="Content-Security-Policy"]')), 'CSP ativa no site');
+  await p.fill('#rgfNumero', '100'); await p.click('#btnRgfContinuar'); await p.click('#btnRgfSouEu');
+  await p.click('#btnComecarDia');
+  const lista = await p.locator('#listaVeiculos').innerText();
+  ok(lista.includes('1234,5 h'), 'Máquina mostra horímetro (1234,5 h)');
+  ok(lista.includes('10 dias para expirar o licenciamento do veículo Retroescavadeira'), 'Aviso de 10 dias para o licenciamento');
+  ok(lista.includes('Licenciamento do veículo Gol ABC-1234 vencido desde'), 'Aviso de licenciamento vencido');
+  ok((lista.match(/licenciamento/gi) || []).length === 2, 'Veículo sem data não mostra aviso');
+  // Começa o dia com a máquina
+  await p.click('.veiculo[data-id="maq"]');
+  ok(await p.isVisible('text=Horímetro agora'), 'Saída pede "Horímetro agora"');
+  ok(await p.inputValue('#csKm') === '1234,5', 'Horímetro sugerido 1234,5');
+  await p.click('#csComb button[data-valor="cheio"]');
+  await p.click('#btnComecarAvancar'); await p.click('#btnComecarAvancar');
+  await p.fill('#cdDescricao', 'Limpeza de terreno'); await p.click('#btnComecarAvancar');
+  await p.waitForSelector('#btnSaida');
+  ok((await p.getAttribute('.odometro', 'data-valor')).startsWith('1234,5'), 'Tela do dia: hodômetro mostra 1234,5 h');
+  await p.click('#btnSaida');
+  ok((await p.innerText('.np-km')).includes('1234,5') && (await p.innerText('.np-km')).includes('HORÍMETRO'), 'Nova parada mostra o horímetro (1234,5) sem pedir de novo');
+  await p.fill('#npBusca', 'Terreno da Divisa'); await p.click('#npLista [data-i="0"]');
+  await p.click('#btnChegada');
+  ok(await p.getAttribute('#fcKm', 'type') === 'tel', 'Horímetro: teclado de números'); await p.fill('#fcKm', '1236,5'); await p.click('#folhaFormOk');
+  await p.waitForSelector('text=1236,5 h');
+  ok(!(await p.isVisible('#folhaConfirma:not([hidden])')), '2 h numa parada não pede conferência');
+  await p.click('#btnIrEncerrar');
+  await p.fill('#ceKm', '1240');
+  ok(await p.innerText('#ceRodado') === 'Trabalhado no dia: 5,5 h', 'Encerrar: "Trabalhado no dia: 5,5 h"');
+  await p.click('#btnEncerrar');
+  await p.waitForSelector('#visorAcoes [data-visor="1"]', { timeout: 15000 });
+  await p.click('#visorAcoes [data-visor="1"]');
+  await p.waitForSelector('#tela-inicio:not([hidden])');
+
+  await p.waitForTimeout(1500);
+  const v = await adm(async db => (await getDoc(doc(db, 'veiculos/maq'))).data());
+  ok(v.ultimoKm === 1240, 'Máquina ficou com horímetro 1240');
+
+  // Funcionário começa outra FR (carro) e deixa aberta
+  await p.click('#btnComecarDia'); await p.click('.veiculo[data-id="ok"]');
+  await p.click('#csComb button[data-valor="cheio"]');
+  await p.click('#btnComecarAvancar'); await p.click('#btnComecarAvancar');
+  await p.fill('#cdDescricao', 'Descricao errada'); await p.click('#btnComecarAvancar');
+  await p.waitForSelector('#btnSaida');
+  await p.waitForTimeout(1500);
+  const idAberta = await p.evaluate(() => FR.estado.fr.id);
+
+  // ADM em outro celular: badge de veículos, cadastro e correção da FR
+  const pa = await (await b.newContext({ viewport: { width: 400, height: 860 } })).newPage();
+  pa.on('pageerror', e => console.log('pageerror ADM', e.message));
+  pa.on('console', m => { if (/Content Security Policy/i.test(m.text())) csp.push(m.text()); });
+  await pa.goto('http://localhost:8090/');
+  await pa.click('#btnRgfAdm');
+  await pa.fill('#admEmail', 'adm@fr.test'); await pa.fill('#admSenha', 'senha123'); await pa.click('#btnAdmEntrar');
+  await pa.waitForSelector('#contVeic:not([hidden])');
+  ok(await pa.innerText('#contVeic') === '2', 'Aba Veículos do ADM avisa 2 licenciamentos');
+  await pa.click('[data-aba="frota"]');
+  await pa.click('.frota-item[data-frota="ok"]');
+  await pa.click('[data-fd="editar-veiculo"]');
+  await pa.click('#fvMedidor [data-valor="horimetro"]');
+  ok(await pa.isVisible('text=Horímetro atual'), 'Cadastro troca o rótulo para Horímetro');
+  await pa.click('#fvMedidor [data-valor="km"]');
+  await pa.fill('[data-c="licenciamentoVence"]', dia(30));
+  await pa.click('#folhaFormOk');
+  await pa.waitForSelector('text=30 dias para expirar o licenciamento do veículo Uno XYZ-9999');
+  ok(true, 'ADM cadastrou vencimento e o aviso de 30 dias apareceu');
+  // Corrige a FR aberta do Antônio
+  await pa.click('[data-aba="frs"]');
+  await acaoFr(pa, idAberta, 'editar');
+  await pa.waitForSelector('#fichaAdm:visible');
+  ok((await pa.innerText('#fichaAdm')).includes('Corrigindo a FR de Antonio Silva'), 'Ficha mostra que o ADM está corrigindo');
+  await pa.click('.cartao[data-secao="servico"] .cartao-cab');
+  await pa.fill('textarea[name="descricao"]', 'Descrição corrigida pelo ADM');
+  await pa.click('#btnVoltar');
+  await pa.waitForSelector('text=Correção salva');
+  const fr = await adm(async db => (await getDoc(doc(db, 'frs/' + idAberta))).data());
+  ok(fr.descricao === 'Descrição corrigida pelo ADM' && fr.uid && fr.rgf === '100' && fr.editadoAdmEm, 'Banco: FR corrigida, dono e RGF intactos');
+  ok(!String(await pa.evaluate(() => localStorage.getItem('fr.atual.v2'))).includes('corrigida'), 'Correção não foi para o celular do ADM como FR dele');
+  await p.waitForFunction(() => FR.estado.fr.descricao === 'Descrição corrigida pelo ADM', null, { timeout: 10000 });
+  ok(true, 'Celular do funcionário recebeu a correção');
+  ok(csp.length === 0, 'Nenhum bloqueio da CSP' + (csp.length ? ': ' + csp[0] : ''));
+  await b.close(); await env.cleanup();
+  console.log(falhas ? `${falhas} falha(s)` : 'TUDO OK');
+  process.exit(falhas ? 1 : 0);
+})().catch(e => { console.log('ERRO', ((e.stack || '').match(/\w+\.cjs:\d+/) || [''])[0], e.message.split('\n')[0]); process.exit(1); });

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FR Diário</string>
+    <string name="title_activity_main">FR Relatório Diário</string>
+    <string name="package_name">com.netdiscada.fr</string>
+    <string name="custom_url_scheme">com.netdiscada.fr</string>
+</resources>
