@@ -1,6 +1,7 @@
 // X em "Após os serviços" não é defeito; defeito pode ficar sem descrição; local novo perdido é reenviado.
 // Testa as regras de checklist (sem servidor: dados via IndexedDB).
 const { chromium } = require('playwright');
+const URL = process.env.FR_URL || 'http://localhost:8090/';
 let falhas = 0;
 const ok = (c, msg) => { console.log(c ? 'OK  ' : 'FALHA', msg); if (!c) falhas++; };
 const esperar = async (fn, ms = 20000) => { const fim = Date.now() + ms; let v; while (Date.now() < fim) { v = await fn(); if (v) return v; await new Promise(r => setTimeout(r, 250)); } return v; };
@@ -11,12 +12,20 @@ const esperar = async (fn, ms = 20000) => { const fim = Date.now() + ms; let v; 
   p.on('pageerror', e => console.log('pageerror', e.message));
 
   // Cadastra veículo e defeito aberto no IndexedDB
-  await p.goto('http://localhost:8090/');
+  await p.goto(URL);
   await p.evaluate(async () => {
     // Limpa tudo antes de começar (estado residual de outros testes)
     const db = await new Promise((ok, erro) => {
       const req = indexedDB.open('fr-offline', 1);
       req.onerror = () => erro(req.error);
+      req.onupgradeneeded = () => {
+        const d = req.result;
+        if (!d.objectStoreNames.contains('funcionarios')) d.createObjectStore('funcionarios', { keyPath: 'rgf' });
+        if (!d.objectStoreNames.contains('veiculos')) d.createObjectStore('veiculos', { keyPath: 'id' });
+        if (!d.objectStoreNames.contains('frs')) d.createObjectStore('frs', { keyPath: 'id' });
+        if (!d.objectStoreNames.contains('locais')) d.createObjectStore('locais', { keyPath: 'chave' });
+        if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta', { keyPath: 'chave' });
+      };
       req.onsuccess = () => ok(req.result);
     });
     const limpar = () => new Promise((ok2, erro2) => {
