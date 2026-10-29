@@ -5,10 +5,10 @@
 // do aparelho e pelo menu (Animações: desligadas). Nenhum gesto passa de ~0,6 s antes de seguir.
 
 (function (global) {
-  const F = global.FR;
+  const F = window.FR;
   const { escapar } = F;
   const CHAVE = 'fr.animacoes.v1';
-  const reduzir = global.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+  const reduzir = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
   const ligado = () => !reduzir.matches && F.ler(CHAVE, 'on') !== 'off';
   function aplicar() { document.documentElement.classList.toggle('sem-anim', !ligado()); }
   aplicar();
@@ -323,5 +323,5 @@
     });
   }
 
-  global.FrAnim = { ligado, alternar, vibrar, pausa, digitos, rolar, cena, chegouNaPista, transicao, trocarTela, proxima, chaveIgnicao, ignicao, puxar, folhear, envio, cancelada, enviada, pare, saida, chegada, entrar };
+  window.FrAnim = { ligado, alternar, vibrar, pausa, digitos, rolar, cena, chegouNaPista, transicao, trocarTela, proxima, chaveIgnicao, ignicao, puxar, folhear, envio, cancelada, enviada, pare, saida, chegada, entrar };
 })(window);

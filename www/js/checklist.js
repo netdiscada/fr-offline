@@ -3,12 +3,12 @@
 // "Após os serviços" (abastecimento e limpeza) é diferente: começa em branco e só tem o X (= foi feito).
 
 (function (global) {
-  const { $$, escapar } = global.FR;
-  const GRUPOS = global.FR_LAYOUT.pagina1.checklist;
+  const { $$, escapar } = window.FR;
+  const GRUPOS = window.FR_LAYOUT.pagina1.checklist;
 
   // opcoes: { grupos: [índices] (padrão todos), pendentes: { itemId: 'texto' }, aoMudar }
   function render(caixa, opcoes = {}) {
-    const fr = global.FR.frFicha();
+    const fr = window.FR.frFicha();
     const indices = opcoes.grupos || GRUPOS.map((_, i) => i);
     const pendentes = opcoes.pendentes || {};
     caixa.innerHTML = '';
@@ -67,7 +67,7 @@
           if (b.dataset.v === 'ok' && fr.defeitosItens) delete fr.defeitosItens[it.id];
           marcar(caixa);
           if (opcoes.aoMudar) opcoes.aoMudar();
-          if (b.dataset.v === 'x' && global.FR.ehDefeito(it.id)) descrever(it, caixa, opcoes);
+          if (b.dataset.v === 'x' && window.FR.ehDefeito(it.id)) descrever(it, caixa, opcoes);
         });
         caixa.appendChild(linha);
       });
@@ -77,7 +77,7 @@
 
   // Pergunta qual é o problema do item marcado com X
   function descrever(it, caixa, opcoes) {
-    const F = global.FR;
+    const F = window.FR;
     const fr = F.frFicha();
     fr.defeitosItens = fr.defeitosItens || {};
     F.folhaForm({
@@ -98,7 +98,7 @@
   }
 
   function marcar(caixa) {
-    const fr = global.FR.frFicha();
+    const fr = window.FR.frFicha();
     const d = fr.defeitosItens || {};
     $$('.item', caixa).forEach(linha => {
       const v = fr.checklist[linha.dataset.id] || '';
@@ -108,7 +108,7 @@
       });
       // Descrição do problema embaixo do item (tocar no X de novo corrige)
       let desc = linha.querySelector('.item-defeito');
-      const texto = v === 'x' && global.FR.ehDefeito(linha.dataset.id) ? (d[linha.dataset.id] || 'Sem descrição (toque no X para descrever)') : '';
+      const texto = v === 'x' && window.FR.ehDefeito(linha.dataset.id) ? (d[linha.dataset.id] || 'Sem descrição (toque no X para descrever)') : '';
       if (texto && !desc) {
         desc = document.createElement('small');
         desc.className = 'item-pend item-defeito';
@@ -121,9 +121,9 @@
 
   // Quantos itens dos grupos informados ainda estão sem marcação
   function faltando(indices) {
-    const fr = global.FR.frFicha();
+    const fr = window.FR.frFicha();
     return indices.filter(i => !GRUPOS[i].semDefeito).flatMap(i => GRUPOS[i].itens).filter(it => !fr.checklist[it.id]).length;
   }
 
-  global.FrChecklist = { render, faltando };
+  window.FrChecklist = { render, faltando };
 })(window);

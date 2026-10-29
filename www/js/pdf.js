@@ -2,8 +2,8 @@
 // Cada geração parte de uma cópia limpa do template, então gerar de novo não sobrepõe textos.
 
 (function (global) {
-  const { PDFDocument, StandardFonts, rgb } = global.PDFLib;
-  const L = global.FR_LAYOUT;
+  const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+  const L = window.FR_LAYOUT;
   const TINTA = rgb(0.05, 0.1, 0.35); // azul de caneta, para destacar o que foi preenchido
   const TAM_MAX = 9;
   const TAM_MIN = 6;
@@ -167,5 +167,5 @@
     return await doc.save();
   }
 
-  global.FrPdf = { carregar, gerar, juntar, medir, MAX_PARADAS: L.pagina2.itinerario.length };
+  window.FrPdf = { carregar, gerar, juntar, medir, MAX_PARADAS: L.pagina2.itinerario.length };
 })(window);

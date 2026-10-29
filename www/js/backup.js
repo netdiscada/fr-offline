@@ -3,7 +3,7 @@
 // A pasta escolhida fica guardada no navegador (IndexedDB). Celular e APK não têm isso.
 
 (function (global) {
-  const suportado = typeof global.showDirectoryPicker === 'function' && !(global.FR && global.FR.nativo);
+  const suportado = typeof window.showDirectoryPicker === 'function' && !(window.FR && window.FR.nativo);
   const MESES = ['01-Janeiro', '02-Fevereiro', '03-Marco', '04-Abril', '05-Maio', '06-Junho', '07-Julho',
     '08-Agosto', '09-Setembro', '10-Outubro', '11-Novembro', '12-Dezembro'];
 
@@ -44,7 +44,7 @@
   }
 
   async function escolher() {
-    const h = await global.showDirectoryPicker({ id: 'fr-backup', mode: 'readwrite' });
+    const h = await window.showDirectoryPicker({ id: 'fr-backup', mode: 'readwrite' });
     pastaCache = h;
     await gravarChave('pasta', h);
     return h;
@@ -63,7 +63,7 @@
 
   // FR_ANTONIO_DE_SOUZA_VIEIRA_27-10-2026_GBI2447.pdf: a placa separa duas FRs do mesmo dia
   function nome(fr) {
-    const base = global.FR.nomeArquivo(fr).replace(/\.pdf$/i, '');
+    const base = window.FR.nomeArquivo(fr).replace(/\.pdf$/i, '');
     const extra = String(fr.placa || fr.tombamento || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     return `${base}${extra ? '_' + extra : ''}.pdf`;
   }
@@ -76,10 +76,10 @@
       const h = await pasta();
       if (!h) return;
       if (!(await liberada(true))) {
-        if (!avisou) { avisou = true; global.FR.avisar('Sem licença para salvar na pasta de backup. Abra "Impressão e backup".', 'erro'); }
+        if (!avisou) { avisou = true; window.FR.avisar('Sem licença para salvar na pasta de backup. Abra "Impressão e backup".', 'erro'); }
         return;
       }
-      const [a, m] = (fr.data || global.FR.hoje()).split('-');
+      const [a, m] = (fr.data || window.FR.hoje()).split('-');
       const mes = await h.getDirectoryHandle(`${a}-${MESES[Number(m) - 1] || m}`, { create: true });
       const arq = await mes.getFileHandle(nome(fr), { create: true });
       const w = await arq.createWritable();
@@ -87,9 +87,9 @@
       await w.close();
     })().catch(e => {
       console.warn('[backup]', e);
-      if (!avisou) { avisou = true; global.FR.avisar('Não foi possível salvar a cópia na pasta de backup', 'erro'); }
+      if (!avisou) { avisou = true; window.FR.avisar('Não foi possível salvar a cópia na pasta de backup', 'erro'); }
     });
   }
 
-  global.FrBackup = { suportado, pasta, escolher, esquecer, liberada, guardar, nome };
+  window.FrBackup = { suportado, pasta, escolher, esquecer, liberada, guardar, nome };
 })(window);

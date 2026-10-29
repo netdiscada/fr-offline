@@ -1,8 +1,8 @@
 // FR - início do app: login do aparelho, RGF do funcionário, menu e navegação entre telas.
 
 (function (global) {
-  const F = global.FR;
-  const Db = global.FrDb;
+  const F = window.FR;
+  const Db = window.FrDb;
   const { $ } = F;
   const CHAVE_PEDIDO = 'fr.pedido.v1';
   const CHAVE_VEICULOS = 'fr.veiculos.v1';
@@ -25,7 +25,7 @@
   F.mostrarTela = nome => {
     const antes = document.body.dataset.tela;
     // Ao trocar de tela, a nova entra animada (avança pela direita, volta pela esquerda, a ficha abre como livro)
-    if (antes && antes !== nome && global.FrAnim) global.FrAnim.trocarTela(antes, nome, () => trocar(nome));
+    if (antes && antes !== nome && window.FrAnim) window.FrAnim.trocarTela(antes, nome, () => trocar(nome));
     else trocar(nome);
   };
   function trocar(nome) {
@@ -46,7 +46,7 @@
     if (tela === 'preparar') { $('#btnPrepararVoltar').click(); return; }
     if (tela === 'comecar') { $('#btnComecarVoltar').click(); return; }
     if (tela === 'ficha' || tela === 'encerrar') F.sincronizar();
-    if (F.perfil()) global.FrDia.inicio();
+    if (F.perfil()) window.FrDia.inicio();
     else telaRgf();
   });
 
@@ -70,7 +70,7 @@
     // Site instalado (PWA): o voltar do Android anda no histórico do navegador. Fora da tela inicial
     // fica sempre uma entrada "de reserva" no histórico; o voltar a consome e o app volta uma tela.
     const armar = () => { if (!(history.state && history.state.fr)) history.pushState({ fr: 1 }, ''); };
-    global.addEventListener('popstate', () => {
+    window.addEventListener('popstate', () => {
       voltarUmPasso();
       setTimeout(() => { if (longeDaRaiz()) armar(); }, 0);
     });
@@ -155,7 +155,7 @@
     vigiarRgf();
     acompanharPreparadas();
     F.reenviarLocais().catch(e => console.warn('[FR] reenviar locais', e.code || e));
-    global.FrDia.inicio();
+    window.FrDia.inicio();
     recuperarFr();
   }
 
@@ -171,7 +171,7 @@
     if (r.uid !== u.uid) Db.assumirFr(r.id).catch(e => console.warn('[FR] assumir', e));
     F.estado.fr = F.paraLocal(r);
     F.salvarAgora();
-    if (document.body.dataset.tela === 'inicio') global.FrDia.inicio();
+    if (document.body.dataset.tela === 'inicio') window.FrDia.inicio();
     F.avisar(`FR de ${F.dataCurta(r.data)} recuperada. Continue de onde parou.`);
   }
 
@@ -252,7 +252,7 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) recuperarFr(); });
 
   function redesenharInicio() {
-    if (document.body.dataset.tela === 'inicio' && !document.querySelector('.folha:not([hidden])')) global.FrDia.inicio();
+    if (document.body.dataset.tela === 'inicio' && !document.querySelector('.folha:not([hidden])')) window.FrDia.inicio();
   }
 
   // FRs que colegas compartilharam com este celular
@@ -265,7 +265,7 @@
       if (usando && !F.convidada()) {
         F.usarConvidada(null);
         F.avisar(`A FR de ${usando.condutor} não está mais compartilhada com você`);
-        if (document.body.dataset.tela === 'inicio') global.FrDia.inicio();
+        if (document.body.dataset.tela === 'inicio') window.FrDia.inicio();
         return;
       }
       redesenharInicio();
@@ -307,7 +307,7 @@
           p.papel = papel;
           F.salvarPerfil(p);
           if (virou) {
-            if (['inicio', 'equipe', 'preparar'].includes(document.body.dataset.tela)) global.FrDia.inicio();
+            if (['inicio', 'equipe', 'preparar'].includes(document.body.dataset.tela)) window.FrDia.inicio();
             F.avisar('Cadastro atualizado.');
           }
         }
@@ -336,15 +336,15 @@
   });
 
   // Celular fraco ou quem prefere sem movimento: desliga as animações
-  const rotuloAnim = () => { $('#btnAnimacoes').textContent = 'Animações: ' + (global.FrAnim.ligado() ? 'ligadas' : 'desligadas'); };
+  const rotuloAnim = () => { $('#btnAnimacoes').textContent = 'Animações: ' + (window.FrAnim.ligado() ? 'ligadas' : 'desligadas'); };
   rotuloAnim();
   $('#btnAnimacoes').addEventListener('click', () => {
-    const lig = global.FrAnim.alternar();
+    const lig = window.FrAnim.alternar();
     rotuloAnim();
     F.avisar(lig ? 'Animações ligadas' : 'Animações desligadas');
   });
 
-  $('#btnMenuFicha').addEventListener('click', () => { F.fecharFolhas(); global.FrFicha.abrir(); });
+  $('#btnMenuFicha').addEventListener('click', () => { F.fecharFolhas(); window.FrFicha.abrir(); });
 
   $('#btnMenuTrocarRgf').addEventListener('click', async () => {
     F.fecharFolhas();
@@ -366,7 +366,7 @@
     });
     atualizador.getInfo().then(i => { $('#versao').textContent = 'Versão ' + i.versionName; }).catch(() => {});
   } else {
-    $('#versao').textContent = 'Versão web ' + global.FR_VERSAO;
+    $('#versao').textContent = 'Versão web ' + window.FR_VERSAO;
   }
 
   // ---------- site instalado no celular (PWA) ----------
@@ -399,12 +399,12 @@
     });
 
     let pedidoInstalar = null;
-    global.addEventListener('beforeinstallprompt', e => {
+    window.addEventListener('beforeinstallprompt', e => {
       e.preventDefault();
       pedidoInstalar = e;
       $('#btnInstalar').hidden = false;
     });
-    global.addEventListener('appinstalled', () => { pedidoInstalar = null; $('#btnInstalar').hidden = true; });
+    window.addEventListener('appinstalled', () => { pedidoInstalar = null; $('#btnInstalar').hidden = true; });
     $('#btnInstalar').addEventListener('click', async () => {
       F.fecharFolhas();
       if (!pedidoInstalar) return;
@@ -421,7 +421,7 @@
   // por isso nada da tela espera por ele. As gravações ficam na fila até ele terminar.
   async function iniciar() {
     F.mostrarTela('carregando');
-    global.FrPdf.carregar().catch(e => F.avisar(e.message, 'erro'));
+    window.FrPdf.carregar().catch(e => F.avisar(e.message, 'erro'));
     F.veiculos = F.ler(CHAVE_VEICULOS, []);
     F.locais = F.ler(CHAVE_LOCAIS, []);
     Db.observarVeiculos(lista => {
@@ -438,13 +438,13 @@
     vigiarRgf();
     acompanharPreparadas();
     F.reenviarLocais().catch(e => console.warn('[FR] reenviar locais', e.code || e));
-    global.FrDia.inicio();
+    window.FrDia.inicio();
     recuperarFr();
 
     // ---------- backup por arquivo (exportar/importar .json) ----------
     $('#btnBackupExportar').addEventListener('click', async () => {
       try {
-        const dados = await global.FrBackupOffline.exportar();
+        const dados = await window.FrBackupOffline.exportar();
         const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -473,7 +473,7 @@
         try {
           const texto = await arquivo.text();
           const dados = JSON.parse(texto);
-          const r = await global.FrBackupOffline.importar(dados);
+          const r = await window.FrBackupOffline.importar(dados);
           if (!r.ok) { F.avisar('Falha na importacao: ' + r.motivo, 'erro'); return; }
           F.avisar('Backup importado. Recarregue o app.');
         } catch (e) {

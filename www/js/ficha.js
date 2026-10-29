@@ -3,7 +3,7 @@
 // para o celular, e ao voltar a FR é salva no banco pelo ADM.
 
 (function (global) {
-  const F = global.FR;
+  const F = window.FR;
   const { $, $$, escapar } = F;
   const form = $('#form');
   const CAMPOS_VEICULO = ['tombamento', 'marca', 'modelo', 'placa'];
@@ -23,9 +23,9 @@
   const previaDepois = () => { clearTimeout(previaTimer); previaTimer = setTimeout(previa, 600); };
   function previa() {
     const aside = $('#fichaPrevia');
-    aside.hidden = !global.FrLista.comPainel() || document.body.dataset.tela !== 'ficha';
+    aside.hidden = !window.FrLista.comPainel() || document.body.dataset.tela !== 'ficha';
     if (aside.hidden || !fr()) return;
-    if (!papel) papel = global.FrLista.criarPapel($('#fichaPapel'));
+    if (!papel) papel = window.FrLista.criarPapel($('#fichaPapel'));
     papel.mostrar(JSON.parse(JSON.stringify(fr())));
   }
 
@@ -72,7 +72,7 @@
     const el = $(`[data-medir="${campo}"]`, form);
     if (!el) return;
     const texto = fr()[campo] || '';
-    const r = global.FrPdf.medir(campo, texto);
+    const r = window.FrPdf.medir(campo, texto);
     if (!r || !texto.trim()) { el.textContent = ''; el.classList.remove('cheio'); return; }
     el.textContent = r.cabe ? `${r.usadas} de ${r.total} linhas da FR` : `Texto grande demais: não cabe nas ${r.total} linhas da FR`;
     el.classList.toggle('cheio', !r.cabe);
@@ -161,12 +161,12 @@
       });
       lista.appendChild(li);
     });
-    $('#btnParada').hidden = fr().itinerario.length >= global.FrPdf.MAX_PARADAS;
+    $('#btnParada').hidden = fr().itinerario.length >= window.FrPdf.MAX_PARADAS;
   }
 
   $('#btnParada').addEventListener('click', () => {
     const it = fr().itinerario;
-    if (it.length >= global.FrPdf.MAX_PARADAS) return;
+    if (it.length >= window.FrPdf.MAX_PARADAS) return;
     const anterior = it[it.length - 1];
     it.push({ saida_km: anterior ? (anterior.chegada_km || '') : (fr().partida_km || ''), saida_hora: '', local: '', chegada_km: '', chegada_hora: '' });
     desenharParadas();
@@ -236,7 +236,7 @@
     if (editandoAdm()) { F.estado.aoFimEdicao(); return; }
     if (!(await kmConfere())) return;
     F.sincronizar();
-    global.FrDia.inicio();
+    window.FrDia.inicio();
     F.avisar('FR salva');
   });
   // Voltar sem salvar (a seta do topo salva; este pergunta se houve mudança)
@@ -297,7 +297,7 @@
     if (adm) $('#fichaAdm').textContent = `${F.estado.avisoEdicao} Toque em Salvar para gravar a correção.`;
     preencherCampos();
     desenharVeiculos();
-    global.FrChecklist.render($('#fichaChecklist'), {
+    window.FrChecklist.render($('#fichaChecklist'), {
       aoMudar: () => {
         if (!fr().defeitosEditado) { fr().defeitos = F.textoDefeitos(fr()); const el = $('textarea[name="defeitos"]', form); if (el) el.value = fr().defeitos; }
         mudou();
@@ -313,5 +313,5 @@
     previa();
   }
 
-  global.FrFicha = { abrir, desenharVeiculos, editarFr };
+  window.FrFicha = { abrir, desenharVeiculos, editarFr };
 })(window);

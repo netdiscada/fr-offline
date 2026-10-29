@@ -68,5 +68,5 @@
     return URL.createObjectURL(blob);
   }
 
-  global.FrImprimir = { imprimir, imagem };
+  window.FrImprimir = { imprimir, imagem };
 })(window);

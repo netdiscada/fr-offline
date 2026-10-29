@@ -1,8 +1,8 @@
 // FR - backup por arquivo (.json): exportar/importar todos os dados do celular.
 // Importacao valida o arquivo inteiro ANTES de apagar qualquer coisa.
 (function (global) {
-  const F = global.FR;
-  const Db = global.FrDb;
+  const F = window.FR;
+  const Db = window.FrDb;
 
   // ---------- exportar ----------
   // Devolve um objeto com tudo o que precisa ser restaurado.
@@ -26,7 +26,7 @@
   }
 
   function lerTudo(lojaNome) {
-    return global.indexedDB ? new Promise((ok, erro) => {
+    return window.indexedDB ? new Promise((ok, erro) => {
       const req = indexedDB.open('fr-offline', 1);
       req.onsuccess = () => {
         const d = req.result;
@@ -113,5 +113,5 @@
   }
 
   // ---------- expor ----------
-  global.FrBackupOffline = { exportar, importar };
+  window.FrBackupOffline = { exportar, importar };
 })(window);

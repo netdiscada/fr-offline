@@ -3,7 +3,7 @@
 // no celular. O papel também serve para a prévia do "Preparar FR" e da ficha completa.
 
 (function (global) {
-  const F = global.FR;
+  const F = window.FR;
   const { $, $$, escapar } = F;
 
   // ---------- papel ----------
@@ -21,9 +21,9 @@
         chave = k;
         const minha = ++vez;
         try {
-          const bytes = await global.FrPdf.gerar(fr);
+          const bytes = await window.FrPdf.gerar(fr);
           const dpi = F.dpiTela(el.clientWidth || 400);
-          const novas = [await global.FrImprimir.imagem(bytes, 1, dpi), await global.FrImprimir.imagem(bytes, 2, dpi)];
+          const novas = [await window.FrImprimir.imagem(bytes, 1, dpi), await window.FrImprimir.imagem(bytes, 2, dpi)];
           if (minha !== vez) { novas.forEach(u => URL.revokeObjectURL(u)); return; }
           urls.forEach(u => URL.revokeObjectURL(u));
           urls = novas;
@@ -153,5 +153,5 @@
     papelPc = null;
   }
 
-  global.FrLista = { cartao, painel, ligar, fechar, criarPapel, comPainel };
+  window.FrLista = { cartao, painel, ligar, fechar, criarPapel, comPainel };
 })(window);

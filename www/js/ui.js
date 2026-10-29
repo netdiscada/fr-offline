@@ -162,12 +162,12 @@
   const perfil = () => ler(CHAVE_PERFIL, null);
   const salvarPerfil = p => gravar(CHAVE_PERFIL, p);
 
-  const ITENS = global.FR_LAYOUT.pagina1.checklist.flatMap(g => g.itens);
+  const ITENS = window.FR_LAYOUT.pagina1.checklist.flatMap(g => g.itens);
   const GRUPO_ITEM = {};
-  global.FR_LAYOUT.pagina1.checklist.forEach((g, i) => g.itens.forEach(it => { GRUPO_ITEM[it.id] = i; }));
+  window.FR_LAYOUT.pagina1.checklist.forEach((g, i) => g.itens.forEach(it => { GRUPO_ITEM[it.id] = i; }));
   // X neste item é defeito do veículo? (abastecimento e limpeza não são)
   const SEM_DEFEITO = {};
-  global.FR_LAYOUT.pagina1.checklist.forEach(g => { if (g.semDefeito) g.itens.forEach(it => { SEM_DEFEITO[it.id] = true; }); });
+  window.FR_LAYOUT.pagina1.checklist.forEach(g => { if (g.semDefeito) g.itens.forEach(it => { SEM_DEFEITO[it.id] = true; }); });
   const ehDefeito = id => !SEM_DEFEITO[id];
   // Itens com X (defeito) que o funcionário deixou sem descrição: o chefe ou o ADM confere
   const defeitosSemDescricao = fr => ITENS.filter(it => fr.checklist && fr.checklist[it.id] === 'x' && ehDefeito(it.id)
@@ -176,7 +176,7 @@
   function frNova() {
     const p = perfil() || {};
     return {
-      id: global.FrDb.novoId(), status: 'aberta', data: hoje(),
+      id: window.FrDb.novoId(), status: 'aberta', data: hoje(),
       rgf: p.rgf || '', condutor: p.nome || '', cargo: p.cargo || '',
       combustivel: '', checklist: checklistTudoOk(), defeitosItens: {}, itinerario: [],
     };
@@ -185,7 +185,7 @@
   // fr: a FR deste funcionário. convidadoId: FR de um colega que ele está usando (compartilhada).
   const estado = { fr: ler(CHAVE_FR, null), convidadoId: ler('fr.convidado.v1', null) };
   // FRs que colegas compartilharam com este celular (vem do banco, ao vivo)
-  const compartilhadas = () => global.FR.listaCompartilhadas || [];
+  const compartilhadas = () => window.FR.listaCompartilhadas || [];
   const convidada = () => (estado.convidadoId && compartilhadas().find(f => f.id === estado.convidadoId)) || null;
   function usarConvidada(id) { estado.convidadoId = id; gravar('fr.convidado.v1', id); }
   // FR que a tela do dia mostra e onde as paradas são registradas
@@ -193,7 +193,7 @@
   // FR da ficha completa e da inspeção: a do funcionário, ou a que o ADM (ou o chefe) está corrigindo
   const frFicha = () => estado.edicaoAdm || estado.fr;
   // FRs que o chefe preparou para este funcionário (vem do banco, ao vivo)
-  const preparadas = () => global.FR.listaPreparadas || [];
+  const preparadas = () => window.FR.listaPreparadas || [];
   const ehChefe = () => { const p = perfil(); return !!p && p.papel === 'chefe'; };
 
   // FR do banco → FR do celular (sem os campos que só o banco controla)
@@ -203,7 +203,7 @@
       _enviada: true, _itinerarioEnviado: JSON.stringify(r.itinerario || []), _editadoAdmEm: millis(r.editadoAdmEm),
       _correcaoKmEm: (r.correcaoKm && r.correcaoKm.em) || 0,
     });
-    global.FrDb.SO_BANCO.forEach(k => delete x[k]);
+    window.FrDb.SO_BANCO.forEach(k => delete x[k]);
     x.itinerario = x.itinerario || [];
     x.checklist = x.checklist || {};
     return x;
@@ -219,11 +219,11 @@
   // Na FR de um colega só vão as paradas.
   function sincronizar() {
     const c = convidada();
-    if (c) { global.FrDb.salvarItinerario(c).catch(() => {}); return; }
+    if (c) { window.FrDb.salvarItinerario(c).catch(() => {}); return; }
     if (estado.fr) estado.fr._itinerarioEnviado = JSON.stringify(estado.fr.itinerario || []);
     salvarAgora();
     if (!estado.fr || !estado.fr.rgf) return;
-    global.FrDb.salvarFr(estado.fr).catch(e => console.warn('[FR] sincronizar', e));
+    window.FrDb.salvarFr(estado.fr).catch(e => console.warn('[FR] sincronizar', e));
   }
 
   // ---------- histórico local (sugestões) ----------
@@ -247,7 +247,7 @@
   // "Quatinga", "quatinga" e "QUATINGA " são o mesmo local
   const chaveLocal = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toUpperCase().replace(/\s+/g, ' ').trim();
-  const locais = () => global.FR.locais || [];
+  const locais = () => window.FR.locais || [];
 
   // Sugestões para o que está sendo digitado: começa com o texto, depois alguma palavra que começa
   // com ele, depois contém; dentro de cada grupo, os mais usados primeiro
@@ -268,13 +268,13 @@
     if (!texto || !p) return;
     const chave = chaveLocal(texto);
     const existente = locais().find(l => l.chave === chave) || locais().find(l => chaveLocal(l.texto) === chave);
-    if (existente) { global.FrDb.registrarLocal(texto, existente.chave, p.rgf, existente).catch(() => {}); return; }
+    if (existente) { window.FrDb.registrarLocal(texto, existente.chave, p.rgf, existente).catch(() => {}); return; }
     // Local novo fica guardado no celular até o servidor confirmar: se o app for fechado sem internet
     // logo depois, a fila do Firebase pode não ter sido salva, e ele é enviado de novo ao abrir
     const pend = ler(CHAVE_LOCAIS_PEND, {});
     pend[chave] = texto;
     gravar(CHAVE_LOCAIS_PEND, pend);
-    global.FrDb.registrarLocal(texto, chave, p.rgf, null).then(() => tirarPendente(chave)).catch(() => {});
+    window.FrDb.registrarLocal(texto, chave, p.rgf, null).then(() => tirarPendente(chave)).catch(() => {});
   }
   const CHAVE_LOCAIS_PEND = 'fr.locaisPendentes.v1';
   function tirarPendente(chave) {
@@ -286,11 +286,11 @@
   async function reenviarLocais() {
     const pend = ler(CHAVE_LOCAIS_PEND, {});
     if (!Object.keys(pend).length) return;
-    const noServidor = await global.FrDb.chavesLocaisNoServidor();
+    const noServidor = await window.FrDb.chavesLocaisNoServidor();
     const p = perfil();
     Object.entries(pend).forEach(([chave, texto]) => {
       if (noServidor.includes(chave) || !p) { tirarPendente(chave); return; }
-      global.FrDb.registrarLocal(texto, chave, p.rgf, null).then(() => tirarPendente(chave)).catch(() => {});
+      window.FrDb.registrarLocal(texto, chave, p.rgf, null).then(() => tirarPendente(chave)).catch(() => {});
     });
   }
 
@@ -411,13 +411,13 @@
     $('#acoesTexto').textContent = texto || '';
     $('#acoesTexto').hidden = !texto;
     const caixa = $('#acoesLista');
-    caixa.innerHTML = lista.map((a, i) => `<button type="button" class="btn ${a.perigo ? 'btn-perigo-suave' : 'btn-claro'}" data-op="${i}">${global.FR.ic(a.icone)}${escapar(a.rotulo)}</button>`).join('');
+    caixa.innerHTML = lista.map((a, i) => `<button type="button" class="btn ${a.perigo ? 'btn-perigo-suave' : 'btn-claro'}" data-op="${i}">${window.FR.ic(a.icone)}${escapar(a.rotulo)}</button>`).join('');
     $$('[data-op]', caixa).forEach(b => b.addEventListener('click', () => { fecharFolha('folhaAcoes'); lista[+b.dataset.op].fn(); }));
     abrirFolha('folhaAcoes');
   }
 
   // dpi para mostrar uma folha A4 (21 cm) com a largura em px de tela: nítido sem gastar à toa (celular é lento)
-  const dpiTela = largura => Math.round(Math.min(200, Math.max(96, largura * (global.devicePixelRatio || 1) * 1.15 / 8.27)));
+  const dpiTela = largura => Math.round(Math.min(200, Math.max(96, largura * (window.devicePixelRatio || 1) * 1.15 / 8.27)));
 
   // ---------- visor da FR (popup só de leitura, com zoom) ----------
   // acoes: [{ rotulo, fn, principal }] (itens falsos são ignorados). Cada botão fecha o visor e chama fn.
@@ -433,7 +433,7 @@
     folhas.innerHTML = '<div class="vazio"><div class="girando"></div><p>Abrindo a FR…</p></div>';
     const lista = acoes.filter(Boolean);
     const caixa = $('#visorAcoes');
-    caixa.innerHTML = lista.map((a, i) => `<button type="button" class="btn ${a.principal ? 'btn-principal' : 'btn-claro'}" data-visor="${i}">${global.FR.ic(a.icone)}${escapar(a.rotulo)}</button>`).join('');
+    caixa.innerHTML = lista.map((a, i) => `<button type="button" class="btn ${a.principal ? 'btn-principal' : 'btn-claro'}" data-visor="${i}">${window.FR.ic(a.icone)}${escapar(a.rotulo)}</button>`).join('');
     // Até 3 botões numa linha; com 4 (Editar, Abrir/Baixar, Compartilhar, Imprimir) o Imprimir desce no celular
     caixa.classList.toggle('muitas', lista.length > 3);
     caixa.style.gridTemplateColumns = lista.length > 3 ? `repeat(${lista.length - 1}, 1fr)` : lista.length > 1 ? `repeat(${lista.length - 1}, 1fr) 1.4fr` : '1fr';
@@ -444,14 +444,14 @@
     visorFr = f;
     zoom(1);
     try {
-      const bytes = await global.FrPdf.gerar(f);
+      const bytes = await window.FrPdf.gerar(f);
       // Nitidez pela tela (celular precisa de bem menos que o computador): a frente aparece assim que fica pronta
       const dpi = dpiTela(Math.min(innerWidth, 1000));
       const folha = (u, i) => `<figure class="visor-folha"><img src="${u}" alt="Folha ${i + 1} da FR"><figcaption>${i === 0 ? 'Frente' : 'Verso'}</figcaption></figure>`;
-      const frente = await global.FrImprimir.imagem(bytes, 1, dpi);
+      const frente = await window.FrImprimir.imagem(bytes, 1, dpi);
       if (visorFr !== f) { URL.revokeObjectURL(frente); return; }
       folhas.innerHTML = folha(frente, 0);
-      const verso = await global.FrImprimir.imagem(bytes, 2, dpi);
+      const verso = await window.FrImprimir.imagem(bytes, 2, dpi);
       if (visorFr !== f) { URL.revokeObjectURL(verso); return; }
       folhas.insertAdjacentHTML('beforeend', folha(verso, 1));
     } catch (e) { folhas.innerHTML = `<p class="aviso">Não foi possível abrir a FR: ${escapar(e.message)}</p>`; }
@@ -506,7 +506,7 @@
   })();
 
   // ---------- PDF ----------
-  const nativo = !!(global.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+  const nativo = !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
   const plugin = nome => (nativo && Capacitor.Plugins && Capacitor.Plugins[nome]) || null;
   let ultimoPdf = null;
   let podeCompartilhar = false;
@@ -530,7 +530,7 @@
   // (Editar quando der, Abrir no APK, Compartilhar no celular, Baixar PDF no site, Imprimir).
   function acoesPdf(fr, aoImprimir) {
     const usar = acao => async () => {
-      const bytes = await global.FrPdf.gerar(fr);
+      const bytes = await window.FrPdf.gerar(fr);
       ultimoPdf = { bytes, nome: nomeArquivo(fr), frs: [{ fr, bytes }], aoImprimir };
       await usarPdf(acao);
     };
@@ -582,8 +582,8 @@
   const CHAVE_GUIA = 'fr.guiaImpressao.v1';
   function guiaImpressao() {
     // Computador (mouse): tela de impressão do Chrome/Edge
-    const pc = global.matchMedia && matchMedia('(pointer: fine)').matches;
-    global.FR.folhaForm({
+    const pc = window.matchMedia && matchMedia('(pointer: fine)').matches;
+    window.FR.folhaForm({
       titulo: 'Antes de imprimir',
       botao: 'Entendi, imprimir',
       html: pc ? `<ol class="guia">
@@ -602,7 +602,7 @@
         <label class="marcar"><input type="checkbox" id="guiaNaoMostrar"> Já sei, não mostrar de novo neste celular</label>`,
       aoOk: () => {
         if ($('#guiaNaoMostrar').checked) gravar(CHAVE_GUIA, true);
-        global.FR.fecharFolha('folhaForm');
+        window.FR.fecharFolha('folhaForm');
         imprimirWeb();
       },
     });
@@ -612,7 +612,7 @@
     const btn = $('#btnImprimirPdf');
     btn.disabled = true;
     btn.textContent = 'Preparando…';
-    try { await global.FrImprimir.imprimir(ultimoPdf.bytes, ultimoPdf.nome); impressa(); }
+    try { await window.FrImprimir.imprimir(ultimoPdf.bytes, ultimoPdf.nome); impressa(); }
     catch (e) { console.error('[FR] imprimir', e); avisar('Não foi possível imprimir. Use "Baixar o PDF".', 'erro'); }
     finally { btn.disabled = false; btn.textContent = 'Imprimir'; }
   }
@@ -620,17 +620,17 @@
   function impressa() {
     const u = ultimoPdf;
     if (!u || !u.frs) return;
-    if (global.FrBackup) u.frs.forEach(p => global.FrBackup.guardar(p.fr, p.bytes));
+    if (window.FrBackup) u.frs.forEach(p => window.FrBackup.guardar(p.fr, p.bytes));
     const frs = u.frs.map(p => p.fr);
     if (u.aoImprimir) u.aoImprimir(frs);
-    else if (frs[0] === estado.fr && estado.fr.rgf) global.FrDb.marcarImpressas([estado.fr.id], estado.fr.condutor).catch(() => {});
+    else if (frs[0] === estado.fr && estado.fr.rgf) window.FrDb.marcarImpressas([estado.fr.id], estado.fr.condutor).catch(() => {});
   }
 
   // Compartilhar o PDF de uma FR (APK e celular); no computador, que não compartilha arquivo, salva o PDF
   const podeCompartilharPdf = () => nativo
     || !!(navigator.canShare && navigator.canShare({ files: [new File([new Uint8Array(1)], 'a.pdf', { type: 'application/pdf' })] }));
   async function compartilharFr(fr, aoImprimir) {
-    const bytes = await global.FrPdf.gerar(fr);
+    const bytes = await window.FrPdf.gerar(fr);
     ultimoPdf = { bytes, nome: nomeArquivo(fr), frs: [{ fr, bytes }], aoImprimir };
     await usarPdf(podeCompartilharPdf() ? 'compartilhar' : 'abrir');
   }
@@ -638,8 +638,8 @@
   // Várias FRs numa impressão só (cada FR em uma folha, frente e verso). aoImprimir(frs) como acima.
   async function imprimirVarias(lista, aoImprimir) {
     const frs = [];
-    for (const fr of lista) frs.push({ fr, bytes: await global.FrPdf.gerar(fr) });
-    const bytes = frs.length === 1 ? frs[0].bytes : await global.FrPdf.juntar(frs.map(p => p.bytes));
+    for (const fr of lista) frs.push({ fr, bytes: await window.FrPdf.gerar(fr) });
+    const bytes = frs.length === 1 ? frs[0].bytes : await window.FrPdf.juntar(frs.map(p => p.bytes));
     const [a, m, d] = (lista[0].data || hoje()).split('-');
     ultimoPdf = { bytes, nome: frs.length === 1 ? nomeArquivo(lista[0]) : `FRs_${d}-${m}-${a}.pdf`, frs, aoImprimir };
     await usarPdf('imprimir');
@@ -656,7 +656,7 @@
     $('#btnCompartilharPdf').addEventListener('click', () => usarPdf(podeCompartilhar ? 'compartilhar' : 'abrir'));
   });
 
-  global.FR = {
+  window.FR = {
     $, $$, ler, gravar, hoje, agora, dataCurta, numero, escapar,
     avisar, abrirFolha, fecharFolha, fecharFolhas, confirmar, mostrarTela,
     perfil, salvarPerfil, ITENS, GRUPO_ITEM, ehDefeito, defeitosSemDescricao,

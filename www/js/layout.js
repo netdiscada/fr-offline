@@ -55,7 +55,7 @@
     return out;
   }
 
-  global.FR_LAYOUT = {
+  window.FR_LAYOUT = {
     pagina1: {
       numero:     { x0: 128.1, x1: 234.6, y0: 694.8, y1: 707.0 },
       tombamento: { x0: 33.0,  x1: 174.2, y0: 659.0, y1: 677.9 },

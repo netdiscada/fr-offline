@@ -2,7 +2,7 @@
 // O tipo fica no cadastro do veículo (campo "tipo"); veículo antigo, sem tipo, é adivinhado pelo modelo.
 
 (function (global) {
-  const F = global.FR;
+  const F = window.FR;
 
   // Rodas por cima do traço do chassi (o miolo pinta com a cor do fundo do cartão)
   const roda = (x, y, r) => `<circle class="ic-roda" cx="${x}" cy="${y}" r="${r}"/><circle cx="${x}" cy="${y}" r="${(r / 3).toFixed(1)}"/>`;

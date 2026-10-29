@@ -2,7 +2,7 @@
 // O funcionário só digita o km; horários, km sugerido, veículo e defeitos vêm sozinhos.
 
 (function (global) {
-  const F = global.FR;
+  const F = window.FR;
   const { $, $$, escapar } = F;
   const fr = () => F.frAtual();
   const COMBUSTIVEIS = ['cheio', '3/4', '1/2', '1/4'];
@@ -106,8 +106,8 @@
         </div>`;
       });
       html += prep.length
-        ? `<button type="button" class="btn btn-claro" id="btnComecarDia">${global.FrAnim.chaveIgnicao()}Começar outra FR</button>`
-        : `<button type="button" class="btn btn-principal btn-grande" id="btnComecarDia">${global.FrAnim.chaveIgnicao()}Começar o dia</button>
+        ? `<button type="button" class="btn btn-claro" id="btnComecarDia">${window.FrAnim.chaveIgnicao()}Começar outra FR</button>`
+        : `<button type="button" class="btn btn-principal btn-grande" id="btnComecarDia">${window.FrAnim.chaveIgnicao()}Começar o dia</button>
         <p class="dica centro">Escolha o veículo, confira o km (ou horímetro) e faça a inspeção. O resto o app preenche.</p>`;
       carregarAnteriores();
       // Lista guardada no celular aparece na hora; a do banco chega por trás (sinal fraco demorava ~10 s)
@@ -141,18 +141,18 @@
     }
     caixa.innerHTML = html;
     cenaEstrada(atual && atual.status === 'aberta' ? atual.placa : '');
-    global.FrAnim.rolar(caixa);
+    window.FrAnim.rolar(caixa);
 
     const on = (id, fn) => { const el = $('#' + id); if (el) el.addEventListener('click', fn); };
     on('btnMenuOla', () => $('#btnMenu').click());
     // Cada botão faz o seu gesto (curto) e então segue
-    on('btnComecarDia', e => global.FrAnim.ignicao(e.currentTarget).then(comecar));
+    on('btnComecarDia', e => window.FrAnim.ignicao(e.currentTarget).then(comecar));
     on('btnSaida', folhaSaida);
     on('btnChegada', folhaChegada);
-    on('btnIrEncerrar', () => global.FrAnim.pausa(260).then(abrirEncerrar));
-    on('btnVerFicha', e => global.FrAnim.folhear(e.currentTarget).then(() => global.FrFicha.abrir()));
+    on('btnIrEncerrar', () => window.FrAnim.pausa(260).then(abrirEncerrar));
+    on('btnVerFicha', e => window.FrAnim.folhear(e.currentTarget).then(() => window.FrFicha.abrir()));
     on('btnCancelarFr', cancelarFr);
-    on('btnCompartilhar', e => global.FrAnim.envio(e.currentTarget).then(folhaCompartilhar));
+    on('btnCompartilhar', e => window.FrAnim.envio(e.currentTarget).then(folhaCompartilhar));
     on('btnDevolver', devolver);
     on('btnSairConvidado', () => { F.usarConvidada(null); inicio(); });
     $$('[data-usar-fr]', caixa).forEach(b => b.addEventListener('click', () => { F.usarConvidada(b.dataset.usarFr); inicio(); }));
@@ -169,7 +169,7 @@
         if (!f) { F.avisar('Essa FR não está mais no sistema', 'erro'); inicio(); return; }
       }
       if (b.dataset.ant === 'pdf') {
-        F.gerarEMostrarPdf(f, `FR de ${F.dataCurta(f.data)}.`, { aoImprimir: l => global.FrDb.marcarImpressas(l.map(x => x.id), f.condutor).catch(() => {}) })
+        F.gerarEMostrarPdf(f, `FR de ${F.dataCurta(f.data)}.`, { aoImprimir: l => window.FrDb.marcarImpressas(l.map(x => x.id), f.condutor).catch(() => {}) })
           .catch(e => F.avisar(e.message, 'erro'));
         return;
       }
@@ -196,7 +196,7 @@
     if (!p) return Promise.resolve();
     if (pedidoAnteriores) return pedidoAnteriores;
     if (!forcar && Date.now() - anterioresEm < 60000) return Promise.resolve();
-    pedidoAnteriores = global.FrDb.frsDoRgf(p.rgf).then(lista => {
+    pedidoAnteriores = window.FrDb.frsDoRgf(p.rgf).then(lista => {
       F.minhasFrs = lista.filter(f => f.status === 'fechada')
         .sort((a, b) => (b.data || '').localeCompare(a.data || '') || (b.retorno_hora || '').localeCompare(a.retorno_hora || '')).slice(0, 10);
       anterioresEm = Date.now();
@@ -210,7 +210,7 @@
   // O funcionário apaga uma FR anterior (de teste, feita errada). O km que ela deixou no veículo não muda.
   async function apagarAnterior(f) {
     if (!(await F.confirmar('Apagar esta FR?', `A FR de ${F.dataCurta(f.data)} (${rotuloVeiculo(f)}) sai do sistema. Não dá para desfazer.`, 'Apagar'))) return;
-    global.FrDb.excluirFr(f.id).catch(e => F.avisar('Não foi possível apagar: ' + (e.code === 'permission-denied' ? 'sem permissão' : e.message), 'erro'));
+    window.FrDb.excluirFr(f.id).catch(e => F.avisar('Não foi possível apagar: ' + (e.code === 'permission-denied' ? 'sem permissão' : e.message), 'erro'));
     F.minhasFrs = (F.minhasFrs || []).filter(x => x.id !== f.id);
     F.gravar(chaveAnteriores(), F.minhasFrs.map(x => { const c = Object.assign({}, x); delete c._guardada; return c; }));
     if (F.estado.fr && F.estado.fr.id === f.id) { F.estado.fr = null; F.salvarAgora(); }
@@ -220,10 +220,10 @@
 
   // O funcionário corrige uma FR já encerrada (errou algo): mesma ficha completa, grava ao salvar
   function corrigirAnterior(f) {
-    global.FrFicha.editarFr(f, {
+    window.FrFicha.editarFr(f, {
       aviso: `Corrigindo a sua FR de ${F.dataCurta(f.data)}.`,
       salvar: async (x, antes) => {
-        await global.FrDb.salvarFrFuncionario(x, f.uid, veiculo(x.veiculoId));
+        await window.FrDb.salvarFrFuncionario(x, f.uid, veiculo(x.veiculoId));
         // A FR de hoje no mesmo veículo saiu com o km de retorno errado desta: corrige junto
         const hoje = F.estado.fr;
         if (hoje && hoje.id !== x.id && hoje.status === 'aberta' && hoje.veiculoId && hoje.veiculoId === x.veiculoId
@@ -253,13 +253,13 @@
         if (rgf.length < 3) { F.avisar('Digite o RGF do colega', 'erro'); return false; }
         if (rgf === c.rgf) { F.avisar('Esse é o seu RGF', 'erro'); return false; }
         let snap;
-        try { snap = await global.FrDb.consultarRgf(rgf); }
+        try { snap = await window.FrDb.consultarRgf(rgf); }
         catch (e) { F.avisar('Sem internet. Para passar a FR o celular precisa estar conectado.', 'erro'); return false; }
         const d = snap.dados;
         if (!d || !d.aprovado) { F.avisar('RGF não encontrado', 'erro'); return false; }
         if (!(await F.confirmar('Passar a FR?', `A FR de ${rotuloVeiculo(c)} vai para ${d.nome} (RGF ${rgf}).`, 'Passar', false))) return false;
         try {
-          await global.FrDb.passarFr(c.id, { rgf, nome: d.nome, cargo: d.cargo }, { rgf: c.rgf, nome: c.condutor });
+          await window.FrDb.passarFr(c.id, { rgf, nome: d.nome, cargo: d.cargo }, { rgf: c.rgf, nome: c.condutor });
           F.listaPreparadas = F.preparadas().filter(x => x.id !== c.id);
           inicio();
           F.avisar(`FR passada para ${primeiroNome(d.nome)}`);
@@ -286,7 +286,7 @@
       x.checklist = Object.keys(x.checklist).length ? x.checklist : F.checklistTudoOk();
     }
     x._preparada = true;
-    global.FrDb.assumirFr(x.id).catch(e => console.warn('[FR] assumir preparada', e.code || e));
+    window.FrDb.assumirFr(x.id).catch(e => console.warn('[FR] assumir preparada', e.code || e));
     inicioPasso = 1;
     passo = 1;
     desenharPasso();
@@ -298,7 +298,7 @@
   function botaoParada(atual, blocos = '') {
     const andando = emAndamento();
     if (andando) return `<div class="acao-fixa">${blocos}<button type="button" class="btn btn-claro-forte" id="btnChegada">${ICONES.pino}Cheguei${andando.local ? ' em ' + escapar(andando.local) : ''}</button></div>`;
-    if (atual.itinerario.length < global.FrPdf.MAX_PARADAS) return `<div class="acao-fixa">${blocos}<button type="button" class="btn btn-principal" id="btnSaida">${ICONES.seta}Saindo para uma parada</button></div>`;
+    if (atual.itinerario.length < window.FrPdf.MAX_PARADAS) return `<div class="acao-fixa">${blocos}<button type="button" class="btn btn-principal" id="btnSaida">${ICONES.seta}Saindo para uma parada</button></div>`;
     return `<p class="aviso">As 16 linhas do itinerário da FR estão cheias.</p>${blocos ? `<div class="acao-fixa">${blocos}</div>` : ''}`;
   }
 
@@ -324,7 +324,7 @@
     let c = $('.cena', tela);
     if (!c || c.dataset.placa !== (placa || '')) {
       if (c) c.remove();
-      tela.insertAdjacentHTML('afterbegin', global.FrAnim.cena(placa));
+      tela.insertAdjacentHTML('afterbegin', window.FrAnim.cena(placa));
       $('.cena', tela).dataset.placa = placa || '';
     }
   }
@@ -339,7 +339,7 @@
     return `<section class="heroi">
       <div class="heroi-veiculo">${placa}<div><b>${escapar(nome)}</b>${det ? `<small>${escapar(det)}</small>` : ''}</div></div>
       <div class="heroi-km">
-        <div><p class="heroi-rotulo">${escapar(rotulo)}</p><p class="odometro" role="img" aria-label="${agora != null ? escapar(m.grande(agora)) : 'sem registro'} ${m.un}" data-valor="${agora != null ? escapar(m.grande(agora)) : ''}">${agora != null ? global.FrAnim.digitos(m.grande(agora), 'od-' + x.id) : '—'}<span>${m.un}</span></p></div>
+        <div><p class="heroi-rotulo">${escapar(rotulo)}</p><p class="odometro" role="img" aria-label="${agora != null ? escapar(m.grande(agora)) : 'sem registro'} ${m.un}" data-valor="${agora != null ? escapar(m.grande(agora)) : ''}">${agora != null ? window.FrAnim.digitos(m.grande(agora), 'od-' + x.id) : '—'}<span>${m.un}</span></p></div>
         ${ini != null && agora != null ? `<div class="heroi-rodado"><small>${m.horimetro ? 'trabalhadas hoje' : 'rodados hoje'}</small><b>${escapar(m.texto(agora - ini))} ${m.un}</b></div>` : ''}
       </div>
       ${extra || ''}
@@ -406,7 +406,7 @@
         if (rgf.length < 3) { F.avisar('Digite o RGF do colega', 'erro'); return false; }
         if (rgf === x.rgf) { F.avisar('Esse é o seu RGF', 'erro'); return false; }
         let c;
-        try { c = await global.FrDb.colega(rgf); }
+        try { c = await window.FrDb.colega(rgf); }
         catch (e) { F.avisar('Sem internet. Para compartilhar o celular precisa estar conectado.', 'erro'); return false; }
         if (c.erro) { F.avisar(c.erro, 'erro'); return false; }
         if (lista.some(o => o.uid === c.uid)) { F.avisar(`Já está compartilhada com ${c.nome}`, 'erro'); return false; }
@@ -415,7 +415,7 @@
         x.compartilhadoUids = x.compartilhadoCom.map(o => o.uid);
         F.sincronizar();
         inicio();
-        global.FrAnim.enviada();
+        window.FrAnim.enviada();
         F.avisar(`FR compartilhada com ${primeiroNome(c.nome)}`);
       },
     });
@@ -425,7 +425,7 @@
     const c = F.convidada();
     if (emAndamento()) { F.avisar('Registre a chegada antes de devolver', 'erro'); return; }
     if (!(await F.confirmar('Devolveu o carro?', `Você deixa de registrar paradas na FR de ${c.condutor}.`, 'Devolvi', false))) return;
-    global.FrDb.sairDaFr(c).catch(e => console.warn('[FR] devolver', e));
+    window.FrDb.sairDaFr(c).catch(e => console.warn('[FR] devolver', e));
     F.listaCompartilhadas = F.compartilhadas().filter(f => f.id !== c.id);
     F.usarConvidada(null);
     inicio();
@@ -436,8 +436,8 @@
   async function cancelarFr() {
     const x = fr();
     if (!(await F.confirmar('Cancelar esta FR?', 'Tudo o que foi anotado nela será descartado e o veículo continua com o km de antes. Não dá para desfazer.', 'Cancelar a FR'))) return;
-    global.FrDb.excluirFr(x.id).catch(() => {});
-    await global.FrAnim.cancelada();
+    window.FrDb.excluirFr(x.id).catch(() => {});
+    await window.FrAnim.cancelada();
     F.estado.fr = null;
     F.salvarAgora();
     inicio();
@@ -540,7 +540,7 @@
     fr().itinerario.push({ saida_km: ultimoKm(), saida_hora: hora, local, chegada_km: '', chegada_hora: '' });
     F.sincronizar();
     inicio();
-    global.FrAnim.saida();
+    window.FrAnim.saida();
     F.avisar(`Saída para ${local} registrada às ${hora}`);
   }
 
@@ -570,7 +570,7 @@
         F.lembrarLocal(q.local);
         F.sincronizar();
         inicio();
-        global.FrAnim.chegada();
+        window.FrAnim.chegada();
       },
     });
   }
@@ -597,7 +597,7 @@
     $('#passosComecar').innerHTML = PASSOS.map((n, i) =>
       `<span class="${i < passo ? 'feito' : i === passo ? 'atual' : ''}">${i + 1}<span class="passo-nome">. ${n}</span></span>`).join('');
     $('#btnComecarVoltar').textContent = passo === inicioPasso ? 'Cancelar' : 'Voltar';
-    $('#btnComecarAvancar').innerHTML = passo === PASSOS.length - 1 ? global.FrAnim.chaveIgnicao() + 'Começar o dia' : 'Continuar';
+    $('#btnComecarAvancar').innerHTML = passo === PASSOS.length - 1 ? window.FrAnim.chaveIgnicao() + 'Começar o dia' : 'Continuar';
     $('#btnComecarAvancar').hidden = passo === 0; // no passo do veículo, tocar no cartão já avança
     [passoVeiculo, passoSaida, passoInspecao, passoServico][passo]($('#comecar'));
     window.scrollTo(0, 0);
@@ -648,8 +648,8 @@
       contarUso(veiculo(b.dataset.id));
       escolherVeiculo(veiculo(b.dataset.id));
       // O desenho do carro sai andando e puxa a tela para o passo seguinte
-      await global.FrAnim.puxar(b);
-      global.FrAnim.transicao(() => { passo = 1; desenharPasso(); }, 'puxa');
+      await window.FrAnim.puxar(b);
+      window.FrAnim.transicao(() => { passo = 1; desenharPasso(); }, 'puxa');
     });
     $('#btnVeiculoMao').addEventListener('click', () => {
       fr().veiculoId = null;
@@ -743,7 +743,7 @@
     caixa.innerHTML = `<h2 class="titulo-tela">Antes de ligar o veículo</h2>
       <p class="dica">Vem em <b>OK</b>, menos o que estava com X na FR anterior. Toque em <b>X</b> no que estiver com problema e, se puder, descreva. Os itens "durante" e "após" ficam para o fim do dia.</p>
       <div class="cartao cartao-solto" id="ciLista"></div>`;
-    global.FrChecklist.render($('#ciLista'), { grupos: [0], pendentes: pend, aoMudar: F.salvarLocal });
+    window.FrChecklist.render($('#ciLista'), { grupos: [0], pendentes: pend, aoMudar: F.salvarLocal });
   }
 
   function passoServico(caixa) {
@@ -756,7 +756,7 @@
         ${chipsHtml(F.descricoesRecentes(), 'data-desc')}
       </div>`;
     const medir = () => {
-      const r = global.FrPdf.medir('descricao', x.descricao || '');
+      const r = window.FrPdf.medir('descricao', x.descricao || '');
       const el = $('#cdMedidor');
       el.textContent = r && (x.descricao || '').trim() ? (r.cabe ? `${r.usadas} de ${r.total} linhas da FR` : `Não cabe nas ${r.total} linhas da FR`) : '';
       el.classList.toggle('cheio', !!r && !r.cabe);
@@ -772,7 +772,7 @@
 
   $('#btnComecarVoltar').addEventListener('click', () => {
     if (passo === inicioPasso) { F.estado.fr = antesDeComecar; F.salvarAgora(); inicio(); return; }
-    global.FrAnim.transicao(() => { passo--; desenharPasso(); }, 'volta');
+    window.FrAnim.transicao(() => { passo--; desenharPasso(); }, 'volta');
   });
 
   $('#btnComecarAvancar').addEventListener('click', async () => {
@@ -781,7 +781,7 @@
       if (!x.partida_km) { F.avisar(`Digite o ${M().horimetro ? 'horímetro' : 'km do hodômetro'}`, 'erro'); return; }
       if (!x.combustivel) { F.avisar('Marque o nível do combustível', 'erro'); return; }
     }
-    if (passo < PASSOS.length - 1) { global.FrAnim.transicao(() => { passo++; desenharPasso(); }, 'vem'); return; }
+    if (passo < PASSOS.length - 1) { window.FrAnim.transicao(() => { passo++; desenharPasso(); }, 'vem'); return; }
     if (!(x.descricao || '').trim()) { F.avisar('Descreva o serviço do dia', 'erro'); return; }
     const esp = M().ler(x.kmEsperado), inf = M().ler(x.partida_km);
     x.kmDivergente = esp != null && inf != null && esp !== inf;
@@ -791,10 +791,10 @@
     F.lembrarDescricao(x.descricao);
     F.sincronizar();
     // A chave gira na ignição; na tela inicial o carro entra na pista
-    await global.FrAnim.ignicao($('#btnComecarAvancar'));
-    global.FrAnim.proxima('sobe');
+    await window.FrAnim.ignicao($('#btnComecarAvancar'));
+    window.FrAnim.proxima('sobe');
     inicio();
-    global.FrAnim.chegouNaPista();
+    window.FrAnim.chegouNaPista();
     F.avisar('Bom trabalho! Registre cada parada pelos botões.');
   });
 
@@ -832,7 +832,7 @@
     $('#ceHora').addEventListener('input', e => { x.retorno_hora = e.target.value; F.salvarLocal(); });
     $('#ceDefeitos').addEventListener('input', e => { x.defeitos = e.target.value; x.defeitosEditado = true; F.salvarLocal(); });
     $('#ceOcorrencias').addEventListener('input', e => { x.ocorrencias = e.target.value; F.salvarLocal(); });
-    global.FrChecklist.render($('#ceChecklist'), {
+    window.FrChecklist.render($('#ceChecklist'), {
       grupos: [1, 2],
       pendentes: pendentesDoVeiculo(),
       aoMudar: () => {
@@ -852,7 +852,7 @@
     if (a != null && b != null && b < a) { await F.kmMenor(m, a, b, 'da saída do dia'); return; }
     if (a != null && b != null && b - a > (m.horimetro ? 24 : 800)
       && !(await F.confirmar(`Conferir o ${m.nome}`, `Foram ${m.texto(b - a)} ${m.un} no dia. Está certo?`, 'Está certo', false))) return;
-    const falta = global.FrChecklist.faltando([1, 2]);
+    const falta = window.FrChecklist.faltando([1, 2]);
     if (falta && !(await F.confirmar('Inspeção incompleta', `${falta} ${falta === 1 ? 'item ficou' : 'itens ficaram'} sem OK ou X. Encerrar assim mesmo?`, 'Encerrar', false))) return;
 
     // Antes de salvar, o funcionário confere a FR como vai ficar (Editar volta para esta tela)
@@ -869,7 +869,7 @@
           F.sincronizar();
           inicio();
           const m = M(), a = m.ler(y.partida_km), b = m.ler(y.retorno_km);
-          global.FrAnim.pare({ km: a != null && b != null && b >= a ? b - a : null, paradas: y.itinerario.length, un: m.un, enviada: navigator.onLine !== false })
+          window.FrAnim.pare({ km: a != null && b != null && b >= a ? b - a : null, paradas: y.itinerario.length, un: m.un, enviada: navigator.onLine !== false })
             .then(() => F.avisar('FR salva. Bom descanso!'));
         } },
       ],
@@ -890,5 +890,5 @@
     return x;
   }
 
-  global.FrDia = { inicio, alertaRevisao };
+  window.FrDia = { inicio, alertaRevisao };
 })(window);

@@ -191,7 +191,7 @@
   }
 
   const estadoVeiculo = (fr, comDefeitos) => {
-    const km = global.FR.medidor(fr).ler(fr.retorno_km);
+    const km = window.FR.medidor(fr).ler(fr.retorno_km);
     const atual = {
       ultimaFrEm: Date.now(), ultimaFrId: fr.id,
       ultimoCondutor: fr.condutor || '', ultimoRgf: fr.rgf,
@@ -392,7 +392,7 @@
 
   function kmMaisNovo(fr, veiculo) {
     if (veiculo.ultimaFrId === fr.id) return true;
-    const km = global.FR.medidor(fr).ler(fr.retorno_km);
+    const km = window.FR.medidor(fr).ler(fr.retorno_km);
     return km != null && (veiculo.ultimoKm == null || km >= veiculo.ultimoKm);
   }
 
@@ -417,7 +417,7 @@
 
   async function corrigirKmEmCadeia(base, fr, antes, por) {
     // base ignorada (não há servidor). Usa frs locais.
-    const m = global.FR.medidor(fr);
+    const m = window.FR.medidor(fr);
     const de = m.ler(antes && antes.retorno_km);
     const para = m.ler(fr.retorno_km);
     if (!fr.veiculoId || fr.status !== 'fechada' || de == null || para == null || de === para) return 0;
@@ -455,7 +455,7 @@
       Object.assign(alvo, dados, { status: 'fechada', recebidaEm: Date.now(), recebidaPor: por, atualizadoEm: Date.now() });
       await gravarVarios('frs', [alvo]);
     }
-    const m = global.FR.medidor(x);
+    const m = window.FR.medidor(x);
     const km = m.ler(x.retorno_km);
     if (veiculo && km != null && (veiculo.ultimoKm == null || km >= veiculo.ultimoKm)) {
       const v = await lerTudo('veiculos', veiculo.id);
@@ -692,7 +692,7 @@
     limparAntigas: () => limparAntigas(),
   };
 
-  global.FrDb = {
+  window.FrDb = {
     usuario, consultarRgf, vincularRgf, pedirLiberacao, observarRgf,
     observarVeiculos, salvarFr, minhasFrs,
     observarLocais, registrarLocal, chavesLocaisNoServidor,
