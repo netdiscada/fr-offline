@@ -10,6 +10,7 @@ não abre sem internet, cadastro trava). **Não corrigir em cima dela.** Refazer
 `portar-projeto`:
 
 1. Copiar `www/`, `android/`, `testes/`, `package*.json` e `capacitor.config.json` do fr-apk sem mudar nada.
+   **Fonte: só `netdiscada/fr-apk` (main).** A pasta `fr/` do PC-DO-HERMES está desatualizada: não copiar dela.
 2. Trocar só o `www/js/db.js` (Firebase → IndexedDB) mantendo os mesmos nomes de função e formato de retorno.
 3. Tirar o que só existe por causa do servidor (login, ADM, chefe, regras), um item por commit.
 4. Plano e andamento em `PLANO.md`, um item por vez.
