@@ -418,12 +418,12 @@
     });
     atualizador.getInfo().then(i => { $('#versao').textContent = 'Versão ' + i.versionName; }).catch(() => {});
   } else {
-    $('#versao').textContent = global.FR_CONFIG.EMULADOR ? 'Versão de teste (banco local)' : 'Versão web ' + global.FR_VERSAO;
+    $('#versao').textContent = 'Versão web ' + global.FR_VERSAO;
   }
 
   // ---------- site instalado no celular (PWA) ----------
   // O sw.js guarda o app inteiro no celular: depois da primeira visita abre sem internet.
-  if (!F.nativo && 'serviceWorker' in navigator && !global.FR_CONFIG.EMULADOR) {
+  if (!F.nativo && 'serviceWorker' in navigator) {
     const tinhaSw = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.register('sw.js').then(reg => {
       $('#btnAtualizar').hidden = false;

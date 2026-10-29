@@ -11,7 +11,7 @@
     "img-src 'self' blob: data:",
     "font-src 'self' blob: data:",
     "worker-src 'self' blob:",
-    "connect-src 'self'${teste}",
+    "connect-src 'self'" + teste,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
