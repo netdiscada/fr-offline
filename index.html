@@ -49,7 +49,6 @@
         <label class="campo"><span>RGF</span><input id="rgfNumero" inputmode="numeric" autocomplete="off" maxlength="10"></label>
         <button type="button" class="btn btn-principal" id="btnRgfContinuar">Continuar</button>
       </div>
-      <button type="button" class="btn btn-texto" id="btnRgfAdm">Entrar como ADM</button>
 
       <div class="cartao cartao-solto rgf-passo" id="rgfPronto" hidden>
         <h2 class="titulo-tela">É você?</h2>
@@ -60,24 +59,16 @@
 
       <div class="cartao cartao-solto rgf-passo" id="rgfNovo" hidden>
         <h2 class="titulo-tela">Primeiro acesso</h2>
-        <p class="dica">Este RGF ainda não está cadastrado. Preencha e o ADM vai liberar o seu acesso.</p>
+        <p class="dica">Preencha o seu nome e o seu cargo. Fica tudo guardado só neste celular.</p>
         <label class="campo"><span>Nome completo</span><input id="rgfNome" autocomplete="name" autocapitalize="words"></label>
         <label class="campo"><span>Cargo / Função</span><input id="rgfCargo" autocapitalize="words" placeholder="Ex.: Motorista"></label>
-        <button type="button" class="btn btn-principal" id="btnRgfPedirAcesso">Pedir acesso</button>
+        <button type="button" class="btn btn-principal" id="btnRgfPedirAcesso">Entrar</button>
         <button type="button" class="btn btn-texto" data-rgf-voltar>Voltar</button>
       </div>
 
-      <div class="cartao cartao-solto rgf-passo" id="rgfEspera" hidden>
-        <div class="espera-icone"><div class="girando"></div></div>
-        <h2 class="titulo-tela centro">Aguardando o ADM</h2>
-        <p class="dica centro" id="rgfEsperaTexto"></p>
-        <p class="dica centro">Pode fechar o app. Quando o ADM liberar, ele abre direto na próxima vez.</p>
-      </div>
-
       <div class="cartao cartao-solto rgf-passo" id="rgfOcupado" hidden>
-        <h2 class="titulo-tela">RGF em outro celular</h2>
+        <h2 class="titulo-tela">RGF já usado neste celular</h2>
         <p class="dica" id="rgfOcupadoTexto"></p>
-        <button type="button" class="btn btn-principal" id="btnPedirLiberacao">Pedir liberação ao ADM</button>
         <button type="button" class="btn btn-texto" data-rgf-voltar>Voltar</button>
       </div>
     </main>
@@ -159,7 +150,7 @@
         <button class="cartao-cab" type="button"><span class="cartao-num">2</span><span class="cartao-titulo">Condutor</span><span class="cartao-status"></span></button>
         <div class="cartao-corpo">
           <div class="info-linhas" id="fichaCondutor"></div>
-          <p class="dica">Nome, RGF e cargo vêm do seu cadastro. Para trocar o RGF, use o menu ⋮ e peça ao ADM.</p>
+          <p class="dica">Nome, RGF e cargo vêm do seu cadastro. Para trocar o RGF, use o menu ⋮.</p>
         </div>
       </section>
 

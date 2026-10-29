@@ -15,9 +15,6 @@
     comecar: ['Começar o dia', ''],
     encerrar: ['Encerrar o dia', ''],
     ficha: ['Ficha completa', ''],
-    adm: ['Área do ADM', 'Funcionários, veículos e FRs'],
-    equipe: ['FRs da equipe', ''],
-    preparar: ['Preparar FR', ''],
     parada: ['Nova parada', ''],
     carregando: ['Relatório Diário', ''],
   };
@@ -32,11 +29,9 @@
     mostrar(nome);
     const [t, s] = TITULOS[nome] || TITULOS.inicio;
     $('#topoTitulo').textContent = t;
-    const p = F.perfil();
-    $('#topoSub').textContent = ['equipe', 'preparar'].includes(nome) && p ? `${p.nome} · Chefe`
-      : s || (F.estado.fr && F.estado.fr.placa ? F.estado.fr.placa : '');
+    $('#topoSub').textContent = s || (F.estado.fr && F.estado.fr.placa ? F.estado.fr.placa : '');
     // Voltar sempre no mesmo lugar (topo, à esquerda) em toda tela que não é a inicial
-    $('#btnVoltar').hidden = !['ficha', 'encerrar', 'adm', 'preparar', 'parada', 'comecar'].includes(nome);
+    $('#btnVoltar').hidden = !['ficha', 'encerrar', 'parada', 'comecar'].includes(nome);
     $('#btnMenu').hidden = ['rgf', 'carregando'].includes(nome);
   }
 
@@ -79,25 +74,20 @@
   }
 
   // ---------- RGF ----------
-  // Passos: digitar o RGF → "É você?" (cadastrado pelo ADM) ou nome/cargo (RGF novo, espera aprovação)
-  // → ou "RGF em outro celular" (pede liberação). O pedido pendente fica salvo para reabrir esperando.
+  // Passos: digitar o RGF → nome/cargo (primeiro acesso) ou entra direto (já cadastrado).
   let pararRgf = null;
   let rgfAtual = null; // { rgf, nome, cargo } em andamento
 
   function passoRgf(id) {
     F.$$('.rgf-passo').forEach(p => { p.hidden = p.id !== id; });
-    $('#btnRgfAdm').hidden = id !== 'rgfPasso1';
   }
 
   function telaRgf(mensagem) {
     $('#rgfAviso').hidden = !mensagem;
     $('#rgfAviso').textContent = mensagem || '';
     passoRgf('rgfPasso1');
-    $('#btnRgfAdm').hidden = true;
     F.mostrarTela('rgf');
   }
-
-  $('#btnRgfAdm').addEventListener('click', () => $('#btnMenuAdm').click());
 
   F.$$('[data-rgf-voltar]').forEach(b => b.addEventListener('click', () => {
     $('#rgfAviso').hidden = true;
@@ -321,7 +311,7 @@
       if (F.estado.fr && F.estado.fr.rgf === p.rgf) { F.estado.fr = null; F.salvarAgora(); }
       F.usarConvidada(null);
       $('#rgfNumero').value = '';
-      telaRgf(st.existe ? 'O ADM liberou a troca. Digite o RGF que este celular vai usar.' : 'Seu cadastro foi removido pelo ADM.');
+      telaRgf(st.existe ? 'Este RGF já foi usado em outro cadastro deste celular. Digite o RGF que este celular vai usar.' : 'Este cadastro não está mais neste celular.');
     });
   }
 
@@ -331,7 +321,6 @@
     $('#menuQuem').innerHTML = p ? `<b>${F.escapar(p.nome)}</b><span>RGF ${F.escapar(p.rgf)} · ${F.escapar(p.cargo)}</span>` : '';
     $('#btnMenuFicha').hidden = !F.estado.fr || !!F.convidada() || document.body.dataset.tela === 'ficha';
     $('#btnMenuTrocarRgf').hidden = !p;
-    $('#btnMenuAdm').textContent = document.body.dataset.tela === 'adm' ? 'Sair da área do ADM' : 'Área do ADM';
     F.abrirFolha('folhaMenu');
   });
 

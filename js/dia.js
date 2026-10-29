@@ -99,7 +99,7 @@
       prep.forEach(c => {
         const futura = c.data > F.hoje();
         html += `<div class="cartao cartao-solto preparada-cartao">
-          <div class="linha-entre"><b>${escapar(primeiroNome(c.preparadaPor && c.preparadaPor.nome) || 'O chefe')} preparou sua FR</b><span class="selo selo-preparada">${futura ? 'Para ' + escapar(F.dataCurta(c.data)) : 'Hoje'}</span></div>
+          <div class="linha-entre"><b>${escapar(primeiroNome(c.preparadaPor && c.preparadaPor.nome) || 'Alguém')} preparou sua FR</b><span class="selo selo-preparada">${futura ? 'Para ' + escapar(F.dataCurta(c.data)) : 'Hoje'}</span></div>
           <div class="preparada-veiculo">${F.placaHtml(c)}<span><b>${escapar([c.marca, c.modelo].filter(Boolean).join(' ') || 'Veículo')}</b>${c.descricao ? `<small>${escapar(c.descricao)}</small>` : ''}</span></div>
           ${futura ? '' : `<button type="button" class="btn btn-principal" data-comecar-prep="${escapar(c.id)}">Começar com esta FR</button>`}
           <button type="button" class="btn btn-texto" data-passar-prep="${escapar(c.id)}">Passar para um colega</button>
@@ -619,7 +619,7 @@
     caixa.innerHTML = `<h2 class="titulo-tela">Qual veículo hoje?</h2>
       ${lista.length > 6 ? '<label class="campo"><input id="buscaVeiculo" placeholder="Buscar por placa, modelo ou tombamento" autocomplete="off"></label>' : ''}
       <div class="lista-veiculos" id="listaVeiculos"></div>
-      ${lista.length ? '' : '<p class="aviso">O ADM ainda não cadastrou veículos. Você pode preencher o veículo à mão na ficha completa.</p>'}
+      ${lista.length ? '' : '<p class="aviso">Nenhum veículo cadastrado neste celular. Cadastre pela ficha completa ou importe um backup.</p>'}
       <button type="button" class="btn btn-texto" id="btnVeiculoMao">Veículo fora da lista</button>`;
     const desenhar = filtro => {
       const f = (filtro || '').toLowerCase();
@@ -707,15 +707,15 @@
           <label class="campo"><span>Horário de saída</span><input id="csHora" type="time" value="${escapar(x.partida_hora)}"></label>
           <label class="campo"><span>Horário na portaria</span><span class="hora"><input id="csPortaria" type="time" value="${escapar(x.portaria_hora || '')}"><button type="button" class="agora" id="csPortariaAgora">Agora</button></span></label>
         </div>
-        ${v && alertaRevisao(v) ? `<p class="aviso">${escapar(alertaRevisao(v))}. Avise o ADM.</p>` : ''}
-        ${v && F.alertaLicenciamento(v) ? `<p class="aviso">${escapar(F.alertaLicenciamento(v).texto)}. Avise o ADM.</p>` : ''}
+        ${v && alertaRevisao(v) ? `<p class="aviso">${escapar(alertaRevisao(v))}.</p>` : ''}
+        ${v && F.alertaLicenciamento(v) ? `<p class="aviso">${escapar(F.alertaLicenciamento(v).texto)}.</p>` : ''}
       </div>`;
     const conferir = () => {
       const esp = m.ler(x.kmEsperado), inf = m.ler(x.partida_km);
       const el = $('#csDiverge');
       el.hidden = esp == null || inf == null || esp === inf;
       if (!el.hidden) el.textContent = inf > esp
-        ? `Diferença de ${m.texto(inf - esp)} ${m.un} desde o último registro. O ADM será avisado de que o veículo ${m.horimetro ? 'trabalhou' : 'rodou'} sem FR no app.`
+        ? `Diferença de ${m.texto(inf - esp)} ${m.un} desde o último registro. O veículo ${m.horimetro ? 'trabalhou' : 'rodou'} sem FR no app.`
         : `O ${m.nome} está ${m.texto(esp - inf)} ${m.un} menor que o último registro. Confira.`;
     };
     $('#csKm').addEventListener('input', e => { x.partida_km = e.target.value.trim(); conferir(); F.salvarLocal(); });

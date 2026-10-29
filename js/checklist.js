@@ -85,7 +85,7 @@
       botao: 'Salvar',
       html: `<label class="campo"><span>Qual é o problema?</span>
         <textarea id="clDefeito" rows="3" autocapitalize="sentences" placeholder="Ex.: farol dianteiro esquerdo queimado">${escapar(fr.defeitosItens[it.id] || '')}</textarea></label>
-        <p class="dica">Vai para "Defeitos / Avarias" da FR. Se não souber explicar, pode salvar em branco: o chefe ou o ADM confere depois.</p>`,
+        <p class="dica">Vai para "Defeitos / Avarias" da FR. Se não souber explicar, pode salvar em branco e completar depois na ficha completa.</p>`,
       aoAbrir: () => setTimeout(() => document.getElementById('clDefeito').focus(), 250),
       aoOk: () => {
         const texto = document.getElementById('clDefeito').value.trim();

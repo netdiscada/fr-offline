@@ -63,7 +63,7 @@
       `O ${m.nome} que você digitou (${m.texto(fim)} ${m.un}) é menor que o ${onde} (${m.texto(ini)} ${m.un}). ` +
       `O ${m.nome} do veículo só aumenta, então um dos dois números está errado.\n\n` +
       `Confira no painel do veículo e digite de novo. Se foi a saída que veio errada (o funcionário anterior anotou errado), ` +
-      `corrija em Ficha completa › Saída ou avise o chefe.`);
+      `corrija em Ficha completa › Saída.`);
   }
 
   function confirmar(titulo, texto, botao, perigo = true) {
@@ -592,7 +592,7 @@
           <li>Marque <b>Imprimir dos dois lados</b> (borda longa).<small>Borda curta deixa o verso de ponta-cabeça.</small></li>
           <li>Papel <b>A4</b>, <b>Retrato</b>, margens <b>Nenhuma</b>, e clique em Imprimir.</li>
         </ol>
-        <p class="dica">Para não ver essa tela toda vez, veja "Impressão e backup" no painel do chefe.</p>
+        <p class="dica">Para não ver essa tela toda vez, marque a caixa abaixo.</p>
         <label class="marcar"><input type="checkbox" id="guiaNaoMostrar"> Já sei, não mostrar de novo neste computador</label>` : `<ol class="guia">
           <li>Escolha a <b>impressora</b> no alto da tela.</li>
           <li>Toque na <b>setinha</b> (⌄) para ver mais opções.</li>
