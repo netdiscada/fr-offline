@@ -424,14 +424,14 @@
     global.FrPdf.carregar().catch(e => F.avisar(e.message, 'erro'));
     F.veiculos = F.ler(CHAVE_VEICULOS, []);
     F.locais = F.ler(CHAVE_LOCAIS, []);
-    Db.observarLocais(lista => {
-      F.locais = lista;
-      F.gravar(CHAVE_LOCAIS, F.locais);
-    });
     Db.observarVeiculos(lista => {
       F.veiculos = lista;
       F.gravar(CHAVE_VEICULOS, lista);
       redesenharInicio();
+    });
+    Db.observarLocais(lista => {
+      F.locais = lista;
+      F.gravar(CHAVE_LOCAIS, F.locais);
     });
     acompanharCompartilhadas();
     if (!F.perfil()) { telaRgf(); return; }
