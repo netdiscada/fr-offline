@@ -440,6 +440,48 @@
     F.reenviarLocais().catch(e => console.warn('[FR] reenviar locais', e.code || e));
     global.FrDia.inicio();
     recuperarFr();
+
+    // ---------- backup por arquivo (exportar/importar .json) ----------
+    $('#btnBackupExportar').addEventListener('click', async () => {
+      try {
+        const dados = await global.FrBackupOffline.exportar();
+        const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'fr-backup-' + F.hoje() + '.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        F.avisar('Backup exportado');
+      } catch (e) {
+        F.avisar('Não foi possível exportar: ' + (e.message || e), 'erro');
+      }
+    });
+
+    $('#btnBackupImportar').addEventListener('click', async () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.hidden = true;
+      document.body.appendChild(input);
+      input.click();
+      input.addEventListener('change', async () => {
+        const arquivo = input.files && input.files[0];
+        if (!arquivo) return;
+        try {
+          const texto = await arquivo.text();
+          const dados = JSON.parse(texto);
+          const r = await global.FrBackupOffline.importar(dados);
+          if (!r.ok) { F.avisar('Falha na importacao: ' + r.motivo, 'erro'); return; }
+          F.avisar('Backup importado. Recarregue o app.');
+        } catch (e) {
+          F.avisar('Arquivo invalido: ' + (e.message || e), 'erro');
+        }
+        document.body.removeChild(input);
+      });
+    });
   }
 
   iniciar().catch(e => { console.error('[FR] iniciar', e); F.avisar('Erro ao abrir: ' + e.message, 'erro'); });
