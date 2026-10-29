@@ -321,7 +321,47 @@
     $('#menuQuem').innerHTML = p ? `<b>${F.escapar(p.nome)}</b><span>RGF ${F.escapar(p.rgf)} · ${F.escapar(p.cargo)}</span>` : '';
     $('#btnMenuFicha').hidden = !F.estado.fr || !!F.convidada() || document.body.dataset.tela === 'ficha';
     $('#btnMenuTrocarRgf').hidden = !p;
+    $('#btnMenuPerfil').hidden = !p;
     F.abrirFolha('folhaMenu');
+  });
+
+  // ---------- Editar Perfil ----------
+  $('#btnMenuPerfil').addEventListener('click', () => {
+    F.fecharFolhas();
+    const p = F.perfil();
+    if (!p) { F.avisar('Não há perfil cadastrado. Digite o RGF primeiro.'); return; }
+
+    const html = `
+      <label class="campo"><span>Nome Completo</span><input name="nome" value="${F.escapar(p.nome)}" autocapitalize="words"></label>
+      <label class="campo"><span>RGF</span><input name="rgf" value="${F.escapar(p.rgf)}" readonly></label>
+      <label class="campo"><span>Cargo/Função</span><input name="cargo" value="${F.escapar(p.cargo)}"></label>
+      <label class="campo"><span>Papel (ex: Gestor)</span><input name="papel" value="${F.escapar(p.papel)}"></label>
+    `;
+
+    F.folhaForm({
+      titulo: 'Editar Perfil',
+      botao: 'Salvar Perfil',
+      html: html,
+      aoOk: async () => {
+        const nome = $('input[name="nome"]').value.trim().replace(/\\s+/g, ' ');
+        const cargo = $('input[name="cargo"]').value.trim();
+        const papel = $('input[name="papel"]').value.trim();
+        
+        if (nome.split(' ').length < 2) { F.avisar('Digite o nome completo', 'erro'); return false; }
+        if (!cargo) { F.avisar('Digite o cargo ou função', 'erro'); return false; }
+
+        const novoPerfil = { rgf: p.rgf, nome, cargo, papel };
+        const r = await window.FrDb.salvarPerfil(novoPerfil); // Re-using existing save function
+        
+        if (r instanceof Error) { F.avisar('Falha ao salvar: ' + r.message, 'erro'); return false; }
+
+        F.salvarPerfil(novoPerfil);
+        F.avisar('Perfil atualizado.');
+        F.fecharFolhas();
+        window.FrDia.inicio();
+        return true;
+      }
+    });
   });
 
   // Celular fraco ou quem prefere sem movimento: desliga as animações

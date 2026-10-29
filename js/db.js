@@ -105,7 +105,21 @@
     return usuarioPronto;
   }
 
-  // ---------- funcionário / RGF ----------
+  // ---------- perfil do funcionário (nome, cargo, papel) ----------
+
+  async function salvarPerfil(perfil) {
+    // perfil: { rgf, nome, cargo, papel } — rgf nunca muda, é a chave de identificação
+    const u = await usuario();
+    const valor = { ...u, ...perfil, rgf: u.rgf };
+    // meta tem keyPath 'chave': grava objeto completo { chave, valor } direto na store
+    return dbAberto().then(d => new Promise((resolve, reject) => {
+      const tx = d.transaction('meta', 'readwrite');
+      const loja = tx.objectStore('meta');
+      const req = loja.put({ chave: 'usuario', valor });
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    }));
+  }  
   const refFunc = rgf => lerTudo('funcionarios', rgf);
 
   async function consultarRgf(rgf) {
@@ -175,6 +189,17 @@
       lista.filter(v => v.ativo !== false)
         .sort((a, b) => (a.modelo || '').localeCompare(b.modelo || '')
           || (a.placa || '').localeCompare(b.placa || ''))), cb);
+  }
+
+  async function salvarVeiculo(v) {
+    const { id, ...dados } = v;
+    const ref = id ? lerTudo('veiculos', id) : Promise.resolve(null);
+    return ref.then(existente => {
+      const dadosCompleto = Object.assign(dados, { atualizadoEm: Date.now() });
+      if (existente) return gravarVarios('veiculos', [{ id, ...dadosCompleto }]);
+      const novoIdVeiculo = id || 'veic_' + Date.now().toString(36);
+      return gravarVarios('veiculos', [{ id: novoIdVeiculo, ...dadosCompleto }]);
+    });
   }
 
   // ---------- FRs ----------
@@ -701,6 +726,8 @@
     registrarChefe, deixarChefe, observarEquipe, observarPainel, frsAnteriores, criarFrPreparada, salvarFrChefe,
     cancelarFrChefe, excluirFr, receberPapel, reabrirFrChefe, fecharAntigas, limparAntigas, SO_BANCO,
     entrarAdm, sairAdm, souAdm, adm,
+    salvarPerfil,
+    salvarVeiculo,
     novoId: () => 'fr_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9),
   };
 })(window);

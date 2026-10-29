@@ -619,7 +619,7 @@
     caixa.innerHTML = `<h2 class="titulo-tela">Qual veículo hoje?</h2>
       ${lista.length > 6 ? '<label class="campo"><input id="buscaVeiculo" placeholder="Buscar por placa, modelo ou tombamento" autocomplete="off"></label>' : ''}
       <div class="lista-veiculos" id="listaVeiculos"></div>
-      ${lista.length ? '' : '<p class="aviso">Nenhum veículo cadastrado neste celular. Cadastre pela ficha completa ou importe um backup.</p>'}
+      <p class="aviso">Nenhum veículo cadastrado neste celular. Use o menu 'Cadastrar veículo' para adicionar ou importe um backup.</p>
       <button type="button" class="btn btn-texto" id="btnVeiculoMao">Veículo fora da lista</button>`;
     const desenhar = filtro => {
       const f = (filtro || '').toLowerCase();
