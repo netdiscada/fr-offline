@@ -147,29 +147,6 @@
     await vincular({ rgf: rgfAtual.rgf, nome, cargo });
   }));
 
-  // Fica ouvindo o RGF até o ADM aprovar/liberar (ou recusar)
-  async function esperar(pedido) {
-    F.gravar(CHAVE_PEDIDO, pedido);
-    $('#rgfEsperaTexto').textContent = pedido.tipo === 'liberacao'
-      ? `Pedido para usar o RGF ${pedido.rgf} neste celular enviado.`
-      : `Cadastro de ${pedido.nome} (RGF ${pedido.rgf}) enviado para aprovação.`;
-    passoRgf('rgfEspera');
-    if (pararRgf) pararRgf();
-    pararRgf = await Db.observarRgf(pedido.rgf, st => {
-      if (st.cache) return;
-      if (st.meu && st.aprovado) { entrou({ rgf: pedido.rgf, nome: st.dados.nome, cargo: st.dados.cargo, papel: st.dados.papel || '' }); return; }
-      const recusado = !st.existe || (pedido.tipo === 'liberacao' && !st.meu && st.dados.pedidoUid == null);
-      if (recusado) {
-        pararRgf();
-        pararRgf = null;
-        localStorage.removeItem(CHAVE_PEDIDO);
-        $('#rgfAviso').textContent = 'O ADM não liberou o acesso. Fale com ele.';
-        $('#rgfAviso').hidden = false;
-        passoRgf('rgfPasso1');
-      }
-    });
-  }
-
   function entrou(dados) {
     if (pararRgf) { pararRgf(); pararRgf = null; }
     localStorage.removeItem(CHAVE_PEDIDO);
