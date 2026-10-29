@@ -69,6 +69,8 @@ const esperar = async (fn, ms = 20000) => { const fim = Date.now() + ms; let v; 
   ok(await p.isHidden('#folhaForm'), 'Defeito sem descrição: a caixa fecha mesmo vazia');
   ok((await p.textContent('.item[data-id="pneus"]')).includes('Sem descrição'), 'Item mostra "Sem descrição"');
   await p.click('#btnComecarAvancar');
+  // A troca de passo tem animação: espera o campo de serviço aparecer
+  await p.waitForSelector('#cdDescricao', { state: 'visible', timeout: 10000 });
   ok(await p.isVisible('#cdDescricao'), 'Continuou para o serviço sem descrever o defeito');
   await p.fill('#cdDescricao', 'Serviço'); await p.click('#btnComecarAvancar');
   await p.waitForSelector('#btnIrEncerrar');
