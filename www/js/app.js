@@ -95,9 +95,8 @@
   function telaRgf(mensagem) {
     $('#rgfAviso').hidden = !mensagem;
     $('#rgfAviso').textContent = mensagem || '';
-    const pedido = F.ler(CHAVE_PEDIDO, null);
-    if (pedido) esperar(pedido);
-    else passoRgf('rgfPasso1');
+    passoRgf('rgfPasso1');
+    $('#btnRgfAdm').hidden = true;
     F.mostrarTela('rgf');
   }
 
@@ -126,49 +125,26 @@
     const rgf = $('#rgfNumero').value.replace(/\D/g, '');
     if (rgf.length < 3) { F.avisar('Digite o seu RGF', 'erro'); return; }
     $('#rgfAviso').hidden = true;
-    const r = await Db.consultarRgf(rgf);
-    rgfAtual = { rgf, nome: (r.dados && r.dados.nome) || '', cargo: (r.dados && r.dados.cargo) || '', papel: (r.dados && r.dados.papel) || '' };
-    if (r.situacao === 'pronto' || r.situacao === 'meu') {
-      $('#rgfProntoDados').innerHTML =
-        `<div><span>Nome</span><b>${F.escapar(rgfAtual.nome)}</b></div>` +
-        `<div><span>RGF</span><b>${F.escapar(rgf)}</b></div>` +
-        `<div><span>Cargo</span><b>${F.escapar(rgfAtual.cargo)}</b></div>`;
-      passoRgf('rgfPronto');
-    } else if (r.situacao === 'novo') {
-      $('#rgfNome').value = rgfAtual.nome;
-      $('#rgfCargo').value = rgfAtual.cargo;
-      passoRgf('rgfNovo');
-    } else {
-      $('#rgfOcupadoTexto').textContent = `O RGF ${rgf} já está ativo no celular de ${rgfAtual.nome}. ` +
-        'Cada funcionário só pode usar o app em um celular. Se este é o seu celular novo, peça a liberação ao ADM.';
-      passoRgf('rgfOcupado');
-    }
+    rgfAtual = { rgf, nome: '', cargo: '', papel: '' };
+    passoRgf('rgfNovo');
   }));
 
   async function vincular(dados) {
     const r = await Db.vincularRgf(dados);
     if (!r.ok) {
       F.avisar('Este RGF acabou de ser usado em outro celular', 'erro');
-      passoRgf('rgfPasso1');
+      passoRgf('rgfNovo');
       return;
     }
-    if (r.aprovado) entrou(Object.assign({}, dados, { papel: (rgfAtual && rgfAtual.papel) || '' }));
-    else esperar(Object.assign({ tipo: 'aprovacao' }, dados));
+    entrou(Object.assign({}, dados, { papel: (rgfAtual && rgfAtual.papel) || '' }));
   }
 
-  $('#btnRgfSouEu').addEventListener('click', e => comBotao(e.target, 'Entrando…', () => vincular(rgfAtual)));
-
-  $('#btnRgfPedirAcesso').addEventListener('click', e => comBotao(e.target, 'Enviando…', async () => {
+  $('#btnRgfPedirAcesso').addEventListener('click', e => comBotao(e.target, 'Entrando…', async () => {
     const nome = $('#rgfNome').value.trim().replace(/\s+/g, ' ');
     const cargo = $('#rgfCargo').value.trim();
     if (nome.split(' ').length < 2) { F.avisar('Digite o nome completo', 'erro'); return; }
     if (!cargo) { F.avisar('Digite o cargo ou função', 'erro'); return; }
     await vincular({ rgf: rgfAtual.rgf, nome, cargo });
-  }));
-
-  $('#btnPedirLiberacao').addEventListener('click', e => comBotao(e.target, 'Enviando…', async () => {
-    await Db.pedirLiberacao(rgfAtual.rgf, 'novo_celular');
-    esperar(Object.assign({ tipo: 'liberacao' }, rgfAtual));
   }));
 
   // Fica ouvindo o RGF até o ADM aprovar/liberar (ou recusar)

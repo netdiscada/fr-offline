@@ -51,13 +51,13 @@
   }
 
   function gravarVarios(lojaNome, registros) {
-    // registros: array de { chave, valor } ou objetos com keyPath
+    // registros: array de { chave, valor } ou objetos diretos (com keyPath da loja)
     return dbAberto().then(d => new Promise((resolve, reject) => {
       const tx = d.transaction(lojaNome, 'readwrite');
       const loja = tx.objectStore(lojaNome);
       registros.forEach(r => {
         if (r.chave !== undefined) loja.put(r.valor, r.chave);
-        else loja.put(r.valor);
+        else loja.put(r);
       });
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
