@@ -342,6 +342,40 @@
     F.avisar('Voce pode digitar outro RGF na proxima vez que abrir o app.');
   });
 
+  $('#btnMenuVeiculo').addEventListener('click', () => {
+    F.fecharFolhas();
+    const campos = [
+      { nome: 'placa', rotulo: 'Placa' },
+      { nome: 'marca', rotulo: 'Marca' },
+      { nome: 'modelo', rotulo: 'Modelo' },
+      { nome: 'tombamento', rotulo: 'Tombamento' },
+    ];
+    const html = campos.map(c => `<label class="campo"><span>${c.rotulo}</span><input name="${c.nome}" autocapitalize="words"></label>`).join('');
+    F.folhaForm({
+      titulo: 'Cadastrar veículo',
+      botao: 'Salvar',
+      html: html + '<p class="dica">Placa é obrigatória. O veículo aparece em "Qual veículo hoje?" e fica salvo neste celular.</p>',
+      aoOk: async () => {
+        const placa = $('input[name="placa"]').value.trim().toUpperCase();
+        if (!placa) { F.avisar('Digite a placa', 'erro'); return false; }
+        const v = {
+          id: $('input[name="placa"]').value.trim().toUpperCase().replace(/\s+/g, '_'),
+          placa,
+          marca: $('input[name="marca"]').value.trim(),
+          modelo: $('input[name="modelo"]').value.trim(),
+          tombamento: $('input[name="tombamento"]').value.trim(),
+          ativo: true,
+          criadoEm: Date.now(),
+          atualizadoEm: Date.now(),
+        };
+        const r = await window.FrDb.salvarVeiculo(v);
+        if (r instanceof Error) { F.avisar('Falha ao salvar: ' + r.message, 'erro'); return false; }
+        F.avisar('Veículo salvo');
+        return true;
+      },
+    });
+  });
+
   // ---------- atualizador do APK ----------
   const atualizador = F.plugin('AppUpdater');
   if (atualizador) {
