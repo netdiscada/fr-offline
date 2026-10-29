@@ -416,7 +416,7 @@
   }
 
   // ---------- início ----------
-  // Abre na hora com o que está no celular (funcionário, FR e veículos). O login do Firebase
+  // Abre na hora com o que está no celular (funcionário, FR e veículos). Sem servidor.
   // confere o usuário no servidor ao abrir e, com sinal fraco, só desiste depois de 30 s:
   // por isso nada da tela espera por ele. As gravações ficam na fila até ele terminar.
   async function iniciar() {
